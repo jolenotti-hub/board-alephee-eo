@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quadro de Ações · Time EO</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy:#331A51; --deep:#271140; --coral:#E45A72; --green:#1FA97D; --sol:#7FD1AE;
+    --purple:#632DA6; --gold:#E08A1E; --ink:#2B2540; --paper:#F7F5FB; --white:#FFFFFF;
+    --line:#E7E3F0; --mut:#8A83A3; --shadow:0 6px 22px rgba(39,17,64,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--paper);line-height:1.45}
+  h1,h2,h3,.serif{font-family:Georgia,'Times New Roman',serif}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  input,select{font-family:inherit;font-size:13.5px;color:var(--ink)}
+  ::selection{background:var(--gold);color:#fff}
+
+  header{background:linear-gradient(120deg,var(--deep),var(--navy));color:#fff;padding:15px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;position:sticky;top:0;z-index:30}
+  .brand{display:flex;flex-direction:column;gap:1px;margin-right:auto}
+  .brand h1{font-size:21px;letter-spacing:.2px}
+  .brand p{font-size:12.5px;color:#C9C1DC}
+  .dots{display:flex;gap:5px;margin-bottom:5px}
+  .dots i{width:11px;height:11px;border-radius:50%;display:block}
+  .prog{display:flex;flex-direction:column;gap:5px;min-width:210px}
+  .prog .lbl{font-size:12.5px;color:#C9C1DC;display:flex;justify-content:space-between}
+  .prog .track{height:9px;border-radius:6px;background:rgba(255,255,255,.14);overflow:hidden}
+  .prog .fill{height:100%;background:linear-gradient(90deg,var(--green),var(--sol));border-radius:6px;transition:width .3s}
+  .tools{display:flex;gap:7px;flex-wrap:wrap}
+  .tools button{color:#fff;border:1px solid rgba(255,255,255,.28);padding:8px 11px;border-radius:8px;font-size:12.5px;font-weight:600;transition:.15s}
+  .tools button:hover{background:rgba(255,255,255,.14)}
+  .sync-chip{font-weight:700;color:#9CE8C6}
+  .sync-chip.local{color:#C9C1DC}
+  .sync-chip.busy{color:#F5C86B}
+  .who-modal{position:fixed;inset:0;background:rgba(39,17,64,.55);display:flex;align-items:center;justify-content:center;z-index:60}
+  .who-box{background:#fff;border-radius:14px;padding:26px 28px;max-width:360px;width:92%;box-shadow:var(--shadow)}
+  .who-box h2{font-size:19px;color:var(--navy);margin-bottom:6px}
+  .who-box p{font-size:13px;color:var(--mut);margin-bottom:14px}
+  .who-box input{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+  .who-box button{width:100%;background:var(--coral);color:#fff;font-weight:700;padding:11px;border-radius:9px;font-size:14.5px}
+
+  .bar{display:flex;gap:10px;align-items:center;padding:13px 24px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:69px;z-index:20}
+  .bar select,.bar input[type=search]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;min-width:150px}
+  .bar input[type=search]{flex:1;min-width:180px}
+  .chipset{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--mut)}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+
+  main{padding:18px 24px 60px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:1500px;margin:0 auto}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  .col{background:#EFEAF7;border-radius:14px;padding:12px;min-height:300px;display:flex;flex-direction:column;gap:10px}
+  .col.over{outline:3px dashed var(--purple);outline-offset:-3px}
+  .col-h{display:flex;align-items:center;gap:9px;padding:4px 6px}
+  .col-h .dot{width:12px;height:12px;border-radius:50%}
+  .col-h h2{font-size:17px}
+  .col-h .cnt{margin-left:auto;background:#fff;color:var(--navy);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;border:1px solid var(--line)}
+  #c-todo .dot{background:var(--mut)} #c-doing .dot{background:var(--gold)} #c-done .dot{background:var(--green)}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 13px;box-shadow:var(--shadow);cursor:grab;transition:.12s}
+  .card:active{cursor:grabbing}
+  .card.dragging{opacity:.45;transform:rotate(1.2deg)}
+  .card.late{border:2px solid var(--coral);background:#FFF6F7}
+  .card.soon{border:2px solid var(--gold);background:#FFFBF2}
+  .card.done-card{opacity:.82}
+  .card.done-card .what{text-decoration:line-through;color:var(--mut)}
+  .what{font-size:14.5px;font-weight:600;margin-bottom:8px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .chip{font-size:11.5px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);white-space:nowrap}
+  .chip.owner{background:#EFE8FA;border-color:#DCCDF2;color:var(--purple);font-weight:600}
+  .chip.kr{background:#FDEEF1;border-color:#F5C4CE;color:#B43350;font-weight:700}
+  .chip.due{font-weight:600}
+  .chip.due.l{background:var(--coral);border-color:var(--coral);color:#fff}
+  .chip.due.s{background:var(--gold);border-color:var(--gold);color:#fff}
+  .chip.status-flag{background:var(--coral);color:#fff;border-color:var(--coral);font-weight:700;letter-spacing:.3px}
+  .cardfoot{display:flex;align-items:center;margin-top:9px;gap:6px}
+  .mv{border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:13px;color:var(--navy);background:#fff;font-weight:700}
+  .mv:hover{background:var(--paper)}
+  .mv:disabled{opacity:.3;cursor:default}
+  .exp-t{margin-left:auto;font-size:12px;color:var(--mut);font-weight:600}
+  .details{display:none;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;font-size:13px}
+  .card.open .details{display:block}
+  .details .row{margin-bottom:7px;color:var(--ink)}
+  .details .lab{font-size:11px;letter-spacing:1px;font-weight:700;color:var(--mut)}
+  .edit{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .edit select,.edit input{border:1px solid var(--line);border-radius:7px;padding:5px 7px;font-size:12.5px;background:#fff}
+
+  .board-foot{max-width:1500px;margin:0 auto;padding:0 24px 40px;display:flex;gap:8px;flex-wrap:wrap}
+  .of{background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:12.5px;color:var(--ink)}
+  .of b{color:var(--purple)}
+  .of .late-n{color:var(--coral);font-weight:700}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 20px;border-radius:10px;font-size:13.5px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;z-index:50}
+  .toast.show{opacity:1}
+  .empty{color:var(--mut);font-size:13px;text-align:center;padding:22px 8px;border:1.5px dashed #D8D0E8;border-radius:10px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="dots"><i style="background:var(--coral)"></i><i style="background:var(--gold)"></i><i style="background:var(--green)"></i><i style="background:#9A6DD7"></i></div>
+    <h1>Quadro de Ações · Time EO</h1>
+    <p>Plano do Planning H2 · quadro compartilhado em tempo real · <span id="sync" class="sync-chip">● conectando...</span></p>
+  </div>
+  <div class="prog">
+    <div class="lbl"><span>Progresso do plano</span><span id="prog-txt">0 de 28</span></div>
+    <div class="track"><div class="fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+  <div class="tools">
+    <button id="expBtn">Exportar JSON</button>
+    <button id="csvBtn">CSV p/ Excel</button>
+    <button id="impBtn">Importar</button>
+    <input type="file" id="impFile" accept=".json" style="display:none">
+  </div>
+</header>
+
+<div class="bar">
+  <select id="f-owner"><option value="">Todos os donos</option></select>
+  <select id="f-kr"><option value="">Todos os vínculos</option></select>
+  <select id="f-mes"><option value="">Todos os meses</option></select>
+  <input type="search" id="f-q" placeholder="Buscar tarefa...">
+  <span class="chipset legend"><span><i style="background:var(--coral)"></i>atrasada</span><span><i style="background:var(--gold)"></i>vence em 7 dias</span></span>
+</div>
+
+<main>
+  <section class="col" id="c-todo" data-st="todo">
+    <div class="col-h"><span class="dot"></span><h2>A fazer</h2><span class="cnt" id="n-todo">0</span></div>
+    <div class="cards" id="l-todo"></div>
+  </section>
+  <section class="col" id="c-doing" data-st="doing">
+    <div class="col-h"><span class="dot"></span><h2>Em andamento</h2><span class="cnt" id="n-doing">0</span></div>
+    <div class="cards" id="l-doing"></div>
+  </section>
+  <section class="col" id="c-done" data-st="done">
+    <div class="col-h"><span class="dot"></span><h2>Concluída</h2><span class="cnt" id="n-done">0</span></div>
+    <div class="cards" id="l-done"></div>
+  </section>
+</main>
+
+<div class="board-foot" id="ownerFoot"></div>
+<div class="toast" id="toast"></div>
+<div class="who-modal" id="whoModal" style="display:none">
+  <div class="who-box">
+    <h2>Quem está no quadro?</h2>
+    <p>Seu nome aparece nas movimentações, pra todo mundo saber quem atualizou o quê.</p>
+    <input id="whoInput" placeholder="Seu nome" maxlength="30">
+    <button id="whoBtn">Entrar no quadro</button>
+  </div>
+</div>
+
+<script>
+const KEY='quadro_acoes_eo_local_v1';
+const SB_URL='https://hauovjaptcngftcgylty.supabase.co';
+const SB_KEY='sb_publishable_NgZPns5j40TAmL3Y27PM2w_qfQkDua0';
+const ROW='board';
+let USER='';
+let shared=false;
+let sb=null;
+const SEED={"tasks": [{"id": "60m0w1m", "what": "Definir métricas e OKR's para o time de EO", "owner": "Jônatas Lenotti", "due": "2026-07-10", "kr": "Processo (não puxa KR)", "measure": "Entregar métricas e ORK's", "status": "todo", "origem": "Comercial · Âncora", "sintoma": "Diminuição do escopo contratual para EO GM do novo contrato GM", "updatedAt": 0, "movedBy": ""}, {"id": "rewisbl", "what": "Listar os clientes em potencial que estão perdendo oportunidades", "owner": "Eduardo Curti", "due": "2026-07-15", "kr": "KR2 · GMV da carteira ↑", "measure": "Ter a lista pronta", "status": "todo", "origem": "Relacionamento · Âncora", "sintoma": "Tomadores de decisões (cliente) não enxergam potencial e valor no canal de vendas online (e-commerce)", "updatedAt": 0, "movedBy": ""}, {"id": "5n8rs0k", "what": "Alinhar com o time de OB a definição de DONE do projeto", "owner": "Eduardo Curti", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Novo processo de handoff aprovado e executado", "status": "todo", "origem": "Processos · Âncora", "sintoma": "Processos de handoff atuais (comercial e onboarding) não são efetivos", "updatedAt": 0, "movedBy": ""}, {"id": "n9wmu5l", "what": "Listar os problemas da Alephee que mais causam insafistação nos clientes atualmente", "owner": "Eduardo Curti", "due": "2026-08-01", "kr": "KR5 · Reativar dormentes / segurar churn", "measure": "Lista elaborada e enviada para os líderes Alephee", "status": "todo", "origem": "Concorrência · Rocha", "sintoma": "Possibilidade de aumento de churn com um novo integrador concorrente homologado pela Stellantis", "updatedAt": 0, "movedBy": ""}, {"id": "kddhfxc", "what": "Elaborar a apresentação de oportunidades, tamanho de mercado e potenciais do e-commerce (jornada de investimento x crescimento)", "owner": "Eduardo Curti", "due": "2026-08-01", "kr": "KR2 · GMV da carteira ↑", "measure": "Ter a apresentação finalizada", "status": "todo", "origem": "Relacionamento · Âncora", "sintoma": "Tomadores de decisões (cliente) não enxergam potencial e valor no canal de vendas online (e-commerce)", "updatedAt": 0, "movedBy": ""}, {"id": "371z2bv", "what": "Organizar uma reunião com o Mati do suporte para entender as priorizações, prazos e tratativas para cada tipo de problema de suporte", "owner": "Eduardo Wenceslau", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Reunião realizada e com ATA e documento sobre as definição", "status": "todo", "origem": "Processos · Rocha", "sintoma": "Dificuldade nas priorizações junto ao time de suporte", "updatedAt": 0, "movedBy": ""}, {"id": "3xr4v19", "what": "Reunião para finalizar clusterização de carteiras", "owner": "Jônatas Lenotti", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Ter a clusterização finalizada", "status": "todo", "origem": "Comercial · Âncora", "sintoma": "Diminuição do escopo contratual para EO GM do novo contrato GM", "updatedAt": 0, "movedBy": ""}, {"id": "9ibi81m", "what": "Estruturar reunião semanal de EO", "owner": "Lucas Xavier", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Ter a reunião estruturada", "status": "todo", "origem": "Processos · Âncora", "sintoma": "Processos de handoff atuais (comercial e onboarding) não são efetivos", "updatedAt": 0, "movedBy": ""}, {"id": "gkb7846", "what": "Definir processo padrão de arquivo de feedback de reclamações ou tickets mal resolvidos do suporte", "owner": "Matheus Carvalho", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Compartilhar com o time e iniciar os registros - acompanhar em reunião semanal", "status": "todo", "origem": "Processos · Âncora", "sintoma": "Processos de handoff atuais (comercial e onboarding) não são efetivos", "updatedAt": 0, "movedBy": ""}, {"id": "wf422fk", "what": "Definições de quais informações devem vir do projeto de OB", "owner": "Eduardo Curti", "due": "2026-08-15", "kr": "Processo (não puxa KR)", "measure": "Ter novo processo de handoff finalizado e executado", "status": "todo", "origem": "Processos · Âncora", "sintoma": "Processos de handoff atuais (comercial e onboarding) não são efetivos", "updatedAt": 0, "movedBy": ""}, {"id": "dny8ccd", "what": "Elaborar relatório de performance/comercial de resultados para as montadoras", "owner": "Eduardo Curti", "due": "2026-09-01", "kr": "KR6 · Oportunidades pro comercial", "measure": "Ter o primeiro relatório finalizado/elaborado e enviado", "status": "todo", "origem": "Comercial · Âncora", "sintoma": "Diminuição do escopo contratual para EO GM do novo contrato GM", "updatedAt": 0, "movedBy": ""}, {"id": "19d33ut", "what": "Criar um acompanhamento de tarefas de suporte para visibilidade geral do time de EO", "owner": "Eduardo Wenceslau", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Ter o acompanhamento entregue", "status": "todo", "origem": "Processos · Rocha", "sintoma": "Dificuldade nas priorizações junto ao time de suporte", "updatedAt": 0, "movedBy": ""}, {"id": "ypw44bh", "what": "Elaborar um processo de identificação de problemas críticos, gatilho e fluxo de trabalho", "owner": "Eduardo Wenceslau", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Processo criado e documentado", "status": "todo", "origem": "Processos · Vento", "sintoma": "Melhor organização das informações dos EO's ", "updatedAt": 0, "movedBy": ""}, {"id": "f1xgpyy", "what": "Buscar formas de fortalecer e melhorar o relacionamento com a Stellantis", "owner": "Jônatas Lenotti", "due": "2026-09-01", "kr": "KR5 · Reativar dormentes / segurar churn", "measure": "Reunião com Stellantis realizada e ações planejadas", "status": "todo", "origem": "Concorrência · Rocha", "sintoma": "Possibilidade de aumento de churn com um novo integrador concorrente homologado pela Stellantis", "updatedAt": 0, "movedBy": ""}, {"id": "zw7ap99", "what": "Criar uma trilha do conhecimento para marketplaces - Mercado Livre, Shopee e Magalu", "owner": "Jônatas Lenotti", "due": "2026-09-01", "kr": "KR4 · Levar \"só ML\" p/ ML+Shopee", "measure": "Ter o treinamento definido e agendado", "status": "todo", "origem": "Capacitações e Treinamentos · Ilha", "sintoma": "Capacitação técnica da Equipe", "updatedAt": 0, "movedBy": ""}, {"id": "db581ip", "what": "Criar Dashboard ou app de acompanhamento de performance de cada EO (painel de EO)", "owner": "Jônatas Lenotti", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Ter o painel funcionado, publicado e ativo", "status": "todo", "origem": "Comercial · Âncora", "sintoma": "Diminuição do escopo contratual para EO GM do novo contrato GM", "updatedAt": 0, "movedBy": ""}, {"id": "h059991", "what": "Criar um processo para solicitação, priorização e acompanhamento de iniciativas de melhorias para a Alephee", "owner": "Lucas Alves", "due": "2026-09-01", "kr": "KR5 · Reativar dormentes / segurar churn", "measure": "Processo criado, aprovado pelo time de EO e rodando.", "status": "todo", "origem": "Processos · Ilha", "sintoma": "Melhorar conteúdos do Alephee Academy", "updatedAt": 0, "movedBy": ""}, {"id": "qmnurlt", "what": "Criar um workshop sobre serviços, identificação de oportunidade e técnicas de vendas", "owner": "Lucas Alves", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Agendar e executar o primeiro workshop", "status": "todo", "origem": "Comercial · Vento", "sintoma": "Vendas GM de consultoria e serviços", "updatedAt": 0, "movedBy": ""}, {"id": "1kpbru6", "what": "Criar uma SQUAD inter equipes para novas funcionalidades que possa atuar proativamente com o time atual de QA.", "owner": "Lucas Xavier", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Criar a Squad e começarem as reuniões", "status": "todo", "origem": "Processos · Rocha", "sintoma": "Dificuldade nas priorizações junto ao time de suporte", "updatedAt": 0, "movedBy": ""}, {"id": "3snddc3", "what": "Criar workshop de capacitações sobre novas funcionalidades", "owner": "Matheus Carvalho", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Agendar primeiro workshop", "status": "todo", "origem": "Comunicação · Âncora", "sintoma": "Falta de comunicação por parte de produtos das novas funcionalidades", "updatedAt": 0, "movedBy": ""}, {"id": "bugfsz8", "what": "Criar um material/capacitação sobre Peças Chevrolet", "owner": "Wilson Silva", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Ter o manual elaborado e publicado", "status": "todo", "origem": "Capacitações e Treinamentos · Ilha", "sintoma": "Capacitação técnica da Equipe", "updatedAt": 0, "movedBy": ""}, {"id": "n6tatm1", "what": "Melhores do Ano Alephee - TOP SELLERS", "owner": "Eduardo Wenceslau", "due": "2026-10-01", "kr": "KR5 · Reativar dormentes / segurar churn", "measure": "Ter a estrutura definida e elaborada da premiação", "status": "todo", "origem": "Reconhecimento · Ilha", "sintoma": "Celebrações entre equipes de resultados (Premiações)", "updatedAt": 0, "movedBy": ""}, {"id": "wbkpu2c", "what": "Criar um relatório de performance e operações para os sellers", "owner": "Jônatas Lenotti", "due": "2026-10-01", "kr": "KR2 · GMV da carteira ↑", "measure": "Ter o relatório aprovado e enviado para os sellers priorizados.", "status": "todo", "origem": "Processos · Ilha", "sintoma": "Melhorar conteúdos do Alephee Academy", "updatedAt": 0, "movedBy": ""}, {"id": "pcw4yrj", "what": "Manter recorrência de reuniões presenciais", "owner": "Jônatas Lenotti", "due": "2026-10-01", "kr": "Processo (não puxa KR)", "measure": "Agendar próxima reunião", "status": "todo", "origem": "Processos · Vento", "sintoma": "Melhor organização das informações dos EO's ", "updatedAt": 0, "movedBy": ""}, {"id": "w4kcx8w", "what": "Trilha de conhecimento EO Lucão - Temas mais importantes (mais urgentes)", "owner": "Lucas Xavier", "due": "2026-10-01", "kr": "Processo (não puxa KR)", "measure": "Ter a trilha do conhecimento elaborada e em execução", "status": "todo", "origem": "Capacitações e Treinamentos · Rocha", "sintoma": "Time com conhecimentos desnivelados e concentrados em pessoas específicas", "updatedAt": 0, "movedBy": ""}, {"id": "whsy5lv", "what": "Criar um processo de onboarding com documentação em cada etapa", "owner": "Matheus Carvalho", "due": "2026-10-01", "kr": "Processo (não puxa KR)", "measure": "Ter o processo criado, com documentos e alinhamento com o RH", "status": "todo", "origem": "Capacitações e Treinamentos · Rocha", "sintoma": "Time com conhecimentos desnivelados e concentrados em pessoas específicas", "updatedAt": 0, "movedBy": ""}, {"id": "kmnprtf", "what": "Elaborar um ritual de celebração entre time e premiação com os melhores EO's do ano", "owner": "Jônatas Lenotti", "due": "2026-11-01", "kr": "Processo (não puxa KR)", "measure": "Ter a estrutura definida, critérios, elegibilidade, etc", "status": "todo", "origem": "Reconhecimento · Ilha", "sintoma": "Celebrações entre equipes de resultados (Premiações)", "updatedAt": 0, "movedBy": ""}, {"id": "xg0agk3", "what": "Desenvolver uma Alephee Academy com base nos conteúdos gerados pelo time de EO e outras equipes", "owner": "Lucas Xavier", "due": "2027-01-01", "kr": "Processo (não puxa KR)", "measure": "Ter a nova Alephee Academy publicada", "status": "todo", "origem": "Processos · Ilha", "sintoma": "Melhorar conteúdos do Alephee Academy", "updatedAt": 0, "movedBy": ""}], "owners": ["Eduardo Curti", "Eduardo Wenceslau", "Jônatas Lenotti", "Lucas Alves", "Lucas Xavier", "Matheus Carvalho", "Wilson Silva"], "krs": ["KR2 · GMV da carteira ↑", "KR4 · Levar \"só ML\" p/ ML+Shopee", "KR5 · Reativar dormentes / segurar churn", "KR6 · Oportunidades pro comercial", "Processo (não puxa KR)"]};
+const ORDER=['todo','doing','done'];
+const NAMES={todo:'A fazer',doing:'Em andamento',done:'Concluída'};
+
+let state={tasks:JSON.parse(JSON.stringify(SEED.tasks))};
+let saveTimer=null;
+
+/* ---------- sync em tempo real via Supabase, com fallback local ---------- */
+function setSync(mode,txt){const el=document.getElementById('sync');el.className='sync-chip '+mode;el.textContent='● '+txt;}
+function mergeBoards(remoteTasks){
+  if(!Array.isArray(remoteTasks))return false;
+  let changed=false;
+  const byId={};state.tasks.forEach(t=>byId[t.id]=t);
+  remoteTasks.forEach(rt=>{
+    const lt=byId[rt.id];
+    if(!lt){state.tasks.push(rt);changed=true;}
+    else if((rt.updatedAt||0)>(lt.updatedAt||0)){Object.assign(lt,rt);changed=true;}
+  });
+  return changed;
+}
+async function pullShared(render){
+  if(!shared)return;
+  try{
+    const res=await sb.from('quadro_eo').select('data').eq('id',ROW).maybeSingle();
+    if(res.error)throw res.error;
+    if(res.data&&res.data.data&&res.data.data.tasks){
+      if(mergeBoards(res.data.data.tasks)&&render)renderAll(false);
+    }
+  }catch(e){}
+}
+async function pushShared(){
+  if(!shared){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}return;}
+  setSync('busy','sincronizando...');
+  try{
+    await pullShared(false);
+    const res=await sb.from('quadro_eo').upsert({id:ROW,data:{tasks:state.tasks},updated_at:new Date().toISOString()});
+    if(res.error)throw res.error;
+    setSync('','sincronizado · tempo real');
+  }catch(e){
+    setSync('local','falha de sync — tentando de novo');
+    setTimeout(pushShared,4000);
+  }
+}
+async function load(){
+  try{
+    if(!window.supabase)throw new Error('cdn');
+    sb=window.supabase.createClient(SB_URL,SB_KEY);
+    const res=await sb.from('quadro_eo').select('data').eq('id',ROW).maybeSingle();
+    if(res.error)throw res.error;
+    if(res.data&&res.data.data&&res.data.data.tasks){mergeBoards(res.data.data.tasks);}
+    else{await sb.from('quadro_eo').upsert({id:ROW,data:{tasks:state.tasks},updated_at:new Date().toISOString()});}
+    shared=true;
+    sb.channel('quadro-live')
+      .on('postgres_changes',{event:'*',schema:'public',table:'quadro_eo'},payload=>{
+        const nd=payload["new"];
+        if(nd&&nd.data&&nd.data.tasks){if(mergeBoards(nd.data.tasks))renderAll(false);}
+      })
+      .subscribe(st=>{if(st==='SUBSCRIBED')setSync('','sincronizado · tempo real');});
+    setSync('','sincronizado');
+  }catch(e){
+    shared=false;
+    setSync('local','modo local (sem conexão)');
+    try{const raw=localStorage.getItem(KEY);if(raw)Object.assign(state,JSON.parse(raw));}catch(e2){}
+  }
+}
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(pushShared,300);
+}
+
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hoje=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());};
+const MESES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function fmtDue(iso){const [y,m,d]=iso.split('-');return d+'/'+m+'/'+y.slice(2);}
+function mesKey(iso){return iso.slice(0,7);}
+function mesLabel(iso){const [y,m]=iso.split('-');return MESES[+m-1]+'/'+y.slice(2);}
+function dueClass(t){
+  if(t.status==='done')return '';
+  const due=new Date(+t.due.slice(0,4),+t.due.slice(5,7)-1,+t.due.slice(8,10));
+  const diff=(due-hoje())/86400000;
+  if(diff<0)return 'late';
+  if(diff<=7)return 'soon';
+  return '';
+}
+
+/* ---------- filtros ---------- */
+function filtros(){
+  return {
+    owner:document.getElementById('f-owner').value,
+    kr:document.getElementById('f-kr').value,
+    mes:document.getElementById('f-mes').value,
+    q:document.getElementById('f-q').value.trim().toLowerCase()
+  };
+}
+function passa(t,f){
+  if(f.owner&&t.owner!==f.owner)return false;
+  if(f.kr&&t.kr!==f.kr)return false;
+  if(f.mes&&mesKey(t.due)!==f.mes)return false;
+  if(f.q&&!(t.what.toLowerCase().includes(f.q)||t.measure.toLowerCase().includes(f.q)||t.owner.toLowerCase().includes(f.q)))return false;
+  return true;
+}
+
+/* ---------- render ---------- */
+function cardHTML(t){
+  const dc=dueClass(t);
+  const isDone=t.status==='done';
+  const krChip=t.kr.startsWith('Processo')
+    ?'<span class="chip">Processo</span>'
+    :'<span class="chip kr">'+esc(t.kr)+'</span>';
+  const idx=ORDER.indexOf(t.status);
+  return '<div class="card '+dc+(isDone?' done-card':'')+'" draggable="true" data-id="'+t.id+'">'
+    +'<div class="what">'+esc(t.what)+'</div>'
+    +'<div class="chips">'
+    +(dc==='late'?'<span class="chip status-flag">ATRASADA</span>':'')
+    +'<span class="chip owner">'+esc(t.owner)+'</span>'
+    +'<span class="chip due '+(dc==='late'?'l':dc==='soon'?'s':'')+'">'+fmtDue(t.due)+'</span>'
+    +krChip
+    +'</div>'
+    +'<div class="cardfoot">'
+    +'<button class="mv" data-mv="-1" '+(idx===0?'disabled':'')+' title="Mover pra trás">◀</button>'
+    +'<button class="mv" data-mv="1" '+(idx===2?'disabled':'')+' title="Mover pra frente">▶</button>'
+    +'<button class="exp-t" data-open="1">detalhes ▾</button>'
+    +'</div>'
+    +'<div class="details">'
+    +'<div class="row"><div class="lab">COMO MEDIMOS</div>'+esc(t.measure)+'</div>'
+    +(t.origem?'<div class="row"><div class="lab">TEMA DE ORIGEM</div>'+esc(t.origem)+(t.sintoma?' — '+esc(t.sintoma):'')+'</div>':'')
+    +(t.movedBy?'<div class="row"><div class="lab">ÚLTIMA ATUALIZAÇÃO</div>'+esc(t.movedBy)+'</div>':'')
+    +'<div class="edit">'
+    +'<select data-ed="owner">'+SEED.owners.map(o=>'<option '+(o===t.owner?'selected':'')+'>'+esc(o)+'</option>').join('')+'</select>'
+    +'<input type="date" data-ed="due" value="'+t.due+'">'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+}
+function renderAll(doSave){
+  if(doSave===undefined)doSave=true;
+  const f=filtros();
+  const vis=state.tasks.filter(t=>passa(t,f));
+  ORDER.forEach(st=>{
+    const list=vis.filter(t=>t.status===st)
+      .sort((a,b)=>a.due.localeCompare(b.due)||a.owner.localeCompare(b.owner));
+    const el=document.getElementById('l-'+st);
+    el.innerHTML=list.length?list.map(cardHTML).join(''):'<div class="empty">Nada por aqui'+(st==='done'?' ainda. Bora!':'')+'</div>';
+    document.getElementById('n-'+st).textContent=state.tasks.filter(t=>t.status===st).length;
+  });
+  const done=state.tasks.filter(t=>t.status==='done').length;
+  document.getElementById('prog-txt').textContent=done+' de '+state.tasks.length;
+  document.getElementById('prog-fill').style.width=(done/state.tasks.length*100)+'%';
+  // placar por dono
+  const foot=SEED.owners.map(o=>{
+    const mine=state.tasks.filter(t=>t.owner===o);
+    const pend=mine.filter(t=>t.status!=='done').length;
+    const late=mine.filter(t=>dueClass(t)==='late').length;
+    return '<span class="of"><b>'+esc(o.split(' ')[0])+'</b> · '+pend+' pendente'+(pend!==1?'s':'')
+      +(late?' · <span class="late-n">'+late+' atrasada'+(late!==1?'s':'')+'</span>':'')+'</span>';
+  }).join('');
+  document.getElementById('ownerFoot').innerHTML=foot;
+  bind();
+  if(doSave)save();
+}
+
+/* ---------- interações ---------- */
+function byId(id){return state.tasks.find(t=>t.id===id);}
+function bind(){
+  document.querySelectorAll('.card').forEach(c=>{
+    c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',c.dataset.id);c.classList.add('dragging');});
+    c.addEventListener('dragend',()=>c.classList.remove('dragging'));
+    c.querySelectorAll('.mv').forEach(b=>b.onclick=e=>{
+      e.stopPropagation();
+      const t=byId(c.dataset.id);
+      const i=ORDER.indexOf(t.status)+(+b.dataset.mv);
+      if(i>=0&&i<3){t.status=ORDER[i];t.updatedAt=Date.now();t.movedBy=USER;toast(t.status==='done'?'Concluída! 🎉':'Movida pra '+NAMES[t.status]);renderAll();}
+    });
+    const opener=c.querySelector('[data-open]');
+    opener.onclick=e=>{e.stopPropagation();c.classList.toggle('open');opener.textContent=c.classList.contains('open')?'detalhes ▴':'detalhes ▾';};
+    c.querySelectorAll('[data-ed]').forEach(inp=>{
+      inp.onchange=()=>{const t=byId(c.dataset.id);t[inp.dataset.ed]=inp.value;t.updatedAt=Date.now();t.movedBy=USER;toast('Atualizado ✓');renderAll();};
+      inp.onclick=e=>e.stopPropagation();
+    });
+  });
+  document.querySelectorAll('.col').forEach(col=>{
+    col.ondragover=e=>{e.preventDefault();col.classList.add('over');};
+    col.ondragleave=()=>col.classList.remove('over');
+    col.ondrop=e=>{
+      e.preventDefault();col.classList.remove('over');
+      const t=byId(e.dataTransfer.getData('text/plain'));
+      if(t&&t.status!==col.dataset.st){t.status=col.dataset.st;t.updatedAt=Date.now();t.movedBy=USER;toast(t.status==='done'?'Concluída! 🎉':'Movida pra '+NAMES[t.status]);renderAll();}
+    };
+  });
+}
+
+/* ---------- toolbar ---------- */
+function fillFilters(){
+  const fo=document.getElementById('f-owner');
+  SEED.owners.forEach(o=>{const op=document.createElement('option');op.textContent=o;fo.appendChild(op);});
+  const fk=document.getElementById('f-kr');
+  SEED.krs.forEach(k=>{const op=document.createElement('option');op.textContent=k;fk.appendChild(op);});
+  const fm=document.getElementById('f-mes');
+  state.tasks.map(t=>mesKey(t.due)).filter((v,i,a)=>a.indexOf(v)===i).sort().forEach(m=>{
+    const op=document.createElement('option');op.value=m;op.textContent=mesLabel(m+'-01');fm.appendChild(op);
+  });
+  ['f-owner','f-kr','f-mes'].forEach(id=>document.getElementById(id).onchange=renderAll);
+  document.getElementById('f-q').oninput=renderAll;
+}
+function dl(content,name,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
+document.getElementById('expBtn').onclick=()=>{dl(JSON.stringify(state,null,1),'quadro-acoes-eo.json','application/json');toast('JSON exportado ✓');};
+document.getElementById('csvBtn').onclick=()=>{
+  const rows=[['Tarefa','Dono','Prazo','Vinculo','Como medimos','Status']];
+  state.tasks.forEach(t=>rows.push([t.what,t.owner,fmtDue(t.due),t.kr,t.measure,NAMES[t.status]]));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+  dl('\ufeff'+csv,'quadro-acoes-eo.csv','text/csv;charset=utf-8');toast('CSV exportado pro Excel ✓');
+};
+document.getElementById('impBtn').onclick=()=>document.getElementById('impFile').click();
+document.getElementById('impFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);
+    if(d.tasks)state.tasks=d.tasks;else if(Array.isArray(d))state.tasks=d;
+    toast('Importado ✓');renderAll();}catch(err){toast('Arquivo inválido.');}};
+  r.readAsText(f);e.target.value='';
+};
+let toastTimer=null;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1900);}
+
+function askWho(cb){
+  let n='';try{n=localStorage.getItem('quadro_eo_user')||'';}catch(e){}
+  if(n){USER=n;cb();return;}
+  const m=document.getElementById('whoModal');m.style.display='flex';
+  const go=()=>{
+    const v=document.getElementById('whoInput').value.trim();
+    if(!v)return;
+    USER=v;try{localStorage.setItem('quadro_eo_user',v);}catch(e){}
+    m.style.display='none';cb();
+  };
+  document.getElementById('whoBtn').onclick=go;
+  document.getElementById('whoInput').onkeydown=e=>{if(e.key==='Enter')go();};
+  document.getElementById('whoInput').focus();
+}
+(async()=>{
+  await load();
+  fillFilters();
+  renderAll(false);
+  askWho(()=>{toast('Bem-vindo ao quadro, '+USER+'!');});
+  setInterval(()=>pullShared(true),60000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)pullShared(true);});
+})();
+</script>
+</body>
+</html>
