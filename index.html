@@ -738,28 +738,24 @@ function wireLogin(){
     hideErrs();
     const email=document.getElementById('loginEmail').value.trim().toLowerCase();
     if(!email||email.indexOf('@')===-1){showErr('loginErr1','Digita um e-mail válido.');return;}
-    try{
-      const chk=await sb.rpc('email_autorizado',{p_email:email});
-      if(chk.error)throw chk.error;
-      if(!chk.data){showErr('loginErr1','Esse e-mail não está autorizado. Fala com o Jônatas.');return;}
-      const r=await sb.auth.signInWithOtp({email:email,options:{shouldCreateUser:true}});
-      if(r.error)throw r.error;
-      document.getElementById('loginEmailShow').textContent=email;
-      document.querySelector('.login-step1').style.display='none';
-      document.querySelector('.login-step2').style.display='block';
-      document.getElementById('loginCode').focus();
-    }catch(e){showErr('loginErr1','Não consegui enviar o código. Tenta de novo em 1 minuto.');}
+    const chk=await sb.rpc('email_autorizado',{p_email:email});
+    if(chk.error){showErr('loginErr1','[portaria] '+(chk.error.message||'função email_autorizado não encontrada — o SQL foi rodado?'));return;}
+    if(!chk.data){showErr('loginErr1','Esse e-mail não está autorizado. Fala com o Jônatas.');return;}
+    const r=await sb.auth.signInWithOtp({email:email,options:{shouldCreateUser:true}});
+    if(r.error){showErr('loginErr1','[envio] '+(r.error.message||'falha no envio do código'));return;}
+    document.getElementById('loginEmailShow').textContent=email;
+    document.querySelector('.login-step1').style.display='none';
+    document.querySelector('.login-step2').style.display='block';
+    document.getElementById('loginCode').focus();
   };
   document.getElementById('loginVerify').onclick=async()=>{
     hideErrs();
     const email=document.getElementById('loginEmailShow').textContent;
     const code=document.getElementById('loginCode').value.trim();
     if(!code){showErr('loginErr2','Cola o código do e-mail.');return;}
-    try{
-      const r=await sb.auth.verifyOtp({email:email,token:code,type:'email'});
-      if(r.error)throw r.error;
-      location.reload();
-    }catch(e){showErr('loginErr2','Código inválido ou expirado. Confere e tenta de novo.');}
+    const r=await sb.auth.verifyOtp({email:email,token:code,type:'email'});
+    if(r.error){showErr('loginErr2','Código inválido ou expirado ('+(r.error.message||'')+'). Confere e tenta de novo.');return;}
+    location.reload();
   };
 }
 async function resolveIdentity(){
