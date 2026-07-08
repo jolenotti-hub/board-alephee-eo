@@ -41,7 +41,7 @@
   .who-box{background:#fff;border-radius:14px;padding:26px 28px;max-width:360px;width:92%;box-shadow:var(--shadow)}
   .who-box h2{font-size:19px;color:var(--navy);margin-bottom:6px}
   .who-box p{font-size:13px;color:var(--mut);margin-bottom:14px}
-  .who-box input{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+  .who-box select{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;background:#fff}
   .who-box button{width:100%;background:var(--coral);color:#fff;font-weight:700;padding:11px;border-radius:9px;font-size:14.5px}
   .badge{background:#EFE8FA;border-color:#DCCDF2;color:var(--purple)}
   .cm{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:6px;font-size:12.5px}
@@ -71,6 +71,20 @@
   .kr-actions{display:flex;gap:8px}
   .kr-actions .primary{flex:1;background:var(--coral);color:#fff;font-weight:700;padding:11px;border-radius:9px;font-size:14px}
   .kr-actions .ghost{background:var(--paper);border:1px solid var(--line);color:var(--ink);padding:11px 16px;border-radius:9px;font-size:14px}
+  .pp-row{display:grid;grid-template-columns:1fr 1.3fr auto auto;gap:6px;margin-bottom:8px;align-items:center}
+  .pp-row input[type=text],.pp-row input[type=email]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;width:100%}
+  .pp-dono{display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--mut);white-space:nowrap}
+  #ppBtn{display:none}
+  .auth-area{display:flex;align-items:center;gap:8px}
+  .auth-chip{font-size:12.5px;color:#C9C1DC}
+  .auth-chip b{color:#fff}
+  .auth-chip a{color:#F2A7B3;cursor:pointer;text-decoration:underline}
+  #authBtn{background:var(--coral)!important;border-color:var(--coral)!important}
+  .viewer-note{background:#FFF6E8;border-bottom:1px solid #F2DFC0;color:#8a6a2f;font-size:13px;padding:9px 24px;text-align:center}
+  .viewer-note b{color:#6d5320}
+  .login-step2{display:none}
+  .who-box .muted{font-size:12px;color:var(--mut);margin-top:10px;text-align:center}
+  .who-box .err{color:var(--coral);font-size:12.5px;margin-top:-6px;margin-bottom:10px;display:none}
 
   .bar{display:flex;gap:10px;align-items:center;padding:13px 24px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:69px;z-index:20}
   .bar select,.bar input[type=search]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;min-width:150px}
@@ -138,15 +152,19 @@
     <div class="lbl"><span>Progresso do plano</span><span id="prog-txt">0 de 28</span></div>
     <div class="track"><div class="fill" id="prog-fill" style="width:0%"></div></div>
   </div>
-  <div class="tools">
+  <div class="tools auth-area">
+    <span class="auth-chip" id="authChip"></span>
+    <button id="authBtn">Entrar pra editar</button>
     <button id="expBtn">Exportar JSON</button>
     <button id="csvBtn">CSV p/ Excel</button>
     <button id="impBtn">Importar</button>
     <button id="krBtn">Vínculos</button>
+    <button id="ppBtn">Pessoas</button>
     <input type="file" id="impFile" accept=".json" style="display:none">
   </div>
 </header>
 
+<div class="viewer-note" id="viewerNote" style="display:none">👁 Você está em <b>modo visitante</b>: pode acompanhar tudo, mas não editar. Clica em "Entrar pra editar" no topo pra participar.</div>
 <div class="bar">
   <select id="f-owner"><option value="">Todos os donos</option></select>
   <select id="f-kr"><option value="">Todos os vínculos</option></select>
@@ -172,6 +190,15 @@
 
 <div class="board-foot" id="ownerFoot"></div>
 <div class="toast" id="toast"></div>
+<div class="who-modal" id="ppModal" style="display:none">
+  <div class="kr-box">
+    <h2>Gerenciar pessoas</h2>
+    <p>Quem estiver aqui aparece no seletor de entrada, nas @menções e recebe notificações. Marca "dono" só pra quem pode ser responsável por card.</p>
+    <div id="ppList"></div>
+    <div class="kr-add"><input id="ppNewNome" placeholder="Nome completo" maxlength="40" style="flex:1"><input id="ppNewEmail" placeholder="email@alephee.com" maxlength="60" style="flex:1.3"><button id="ppAddBtn">Adicionar</button></div>
+    <div class="kr-actions"><button class="ghost" id="ppCancel">Cancelar</button><button class="primary" id="ppSave">Salvar alterações</button></div>
+  </div>
+</div>
 <div class="who-modal" id="krModal" style="display:none">
   <div class="kr-box">
     <h2>Gerenciar vínculos (KRs)</h2>
@@ -181,12 +208,24 @@
     <div class="kr-actions"><button class="ghost" id="krCancel">Cancelar</button><button class="primary" id="krSave">Salvar alterações</button></div>
   </div>
 </div>
-<div class="who-modal" id="whoModal" style="display:none">
+<div class="who-modal" id="loginModal" style="display:none">
   <div class="who-box">
-    <h2>Quem está no quadro?</h2>
-    <p>Seu nome aparece nas movimentações, pra todo mundo saber quem atualizou o quê.</p>
-    <input id="whoInput" placeholder="Seu nome" maxlength="30">
-    <button id="whoBtn">Entrar no quadro</button>
+    <div class="login-step1">
+      <h2>Entrar pra editar</h2>
+      <p>Digita seu e-mail corporativo. Vamos te mandar um código de acesso — sem senha pra decorar.</p>
+      <input id="loginEmail" type="email" placeholder="voce@alephee.com" maxlength="60">
+      <div class="err" id="loginErr1"></div>
+      <button id="loginSend">Enviar código</button>
+    </div>
+    <div class="login-step2">
+      <h2>Confere teu e-mail 📬</h2>
+      <p>Enviamos um código de 6 dígitos pra <b id="loginEmailShow"></b>. Cola ele aqui:</p>
+      <input id="loginCode" inputmode="numeric" placeholder="000000" maxlength="8" style="text-align:center;letter-spacing:6px;font-size:18px">
+      <div class="err" id="loginErr2"></div>
+      <button id="loginVerify">Entrar</button>
+      <div class="muted"><a id="loginBack">usar outro e-mail</a></div>
+    </div>
+    <div class="muted"><a id="loginClose">continuar só olhando</a></div>
   </div>
 </div>
 
@@ -196,6 +235,8 @@ const SB_URL='https://hauovjaptcngftcgylty.supabase.co';
 const SB_KEY='sb_publishable_NgZPns5j40TAmL3Y27PM2w_qfQkDua0';
 const ROW='board';
 let USER='';
+let CAN_EDIT=false;
+let MY_EMAIL='';
 let shared=false;
 let sb=null;
 const SEED={"tasks": [{"id": "60m0w1m", "what": "Definir métricas e OKR's para o time de EO", "owner": "Jônatas Lenotti", "due": "2026-07-10", "kr": "Processo (não puxa KR)", "measure": "Entregar métricas e ORK's", "status": "todo", "origem": "Comercial · Âncora", "sintoma": "Diminuição do escopo contratual para EO GM do novo contrato GM", "updatedAt": 0, "movedBy": ""}, {"id": "rewisbl", "what": "Listar os clientes em potencial que estão perdendo oportunidades", "owner": "Eduardo Curti", "due": "2026-07-15", "kr": "KR2 · GMV da carteira ↑", "measure": "Ter a lista pronta", "status": "todo", "origem": "Relacionamento · Âncora", "sintoma": "Tomadores de decisões (cliente) não enxergam potencial e valor no canal de vendas online (e-commerce)", "updatedAt": 0, "movedBy": ""}, {"id": "5n8rs0k", "what": "Alinhar com o time de OB a definição de DONE do projeto", "owner": "Eduardo Curti", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Novo processo de handoff aprovado e executado", "status": "todo", "origem": "Processos · Âncora", "sintoma": "Processos de handoff atuais (comercial e onboarding) não são efetivos", "updatedAt": 0, "movedBy": ""}, {"id": "n9wmu5l", "what": "Listar os problemas da Alephee que mais causam insafistação nos clientes atualmente", "owner": "Eduardo Curti", "due": "2026-08-01", "kr": "KR5 · Reativar dormentes / segurar churn", "measure": "Lista elaborada e enviada para os líderes Alephee", "status": "todo", "origem": "Concorrência · Rocha", "sintoma": "Possibilidade de aumento de churn com um novo integrador concorrente homologado pela Stellantis", "updatedAt": 0, "movedBy": ""}, {"id": "kddhfxc", "what": "Elaborar a apresentação de oportunidades, tamanho de mercado e potenciais do e-commerce (jornada de investimento x crescimento)", "owner": "Eduardo Curti", "due": "2026-08-01", "kr": "KR2 · GMV da carteira ↑", "measure": "Ter a apresentação finalizada", "status": "todo", "origem": "Relacionamento · Âncora", "sintoma": "Tomadores de decisões (cliente) não enxergam potencial e valor no canal de vendas online (e-commerce)", "updatedAt": 0, "movedBy": ""}, {"id": "371z2bv", "what": "Organizar uma reunião com o Mati do suporte para entender as priorizações, prazos e tratativas para cada tipo de problema de suporte", "owner": "Eduardo Wenceslau", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Reunião realizada e com ATA e documento sobre as definição", "status": "todo", "origem": "Processos · Rocha", "sintoma": "Dificuldade nas priorizações junto ao time de suporte", "updatedAt": 0, "movedBy": ""}, {"id": "3xr4v19", "what": "Reunião para finalizar clusterização de carteiras", "owner": "Jônatas Lenotti", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Ter a clusterização finalizada", "status": "todo", "origem": "Comercial · Âncora", "sintoma": "Diminuição do escopo contratual para EO GM do novo contrato GM", "updatedAt": 0, "movedBy": ""}, {"id": "9ibi81m", "what": "Estruturar reunião semanal de EO", "owner": "Lucas Xavier", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Ter a reunião estruturada", "status": "todo", "origem": "Processos · Âncora", "sintoma": "Processos de handoff atuais (comercial e onboarding) não são efetivos", "updatedAt": 0, "movedBy": ""}, {"id": "gkb7846", "what": "Definir processo padrão de arquivo de feedback de reclamações ou tickets mal resolvidos do suporte", "owner": "Matheus Carvalho", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Compartilhar com o time e iniciar os registros - acompanhar em reunião semanal", "status": "todo", "origem": "Processos · Âncora", "sintoma": "Processos de handoff atuais (comercial e onboarding) não são efetivos", "updatedAt": 0, "movedBy": ""}, {"id": "wf422fk", "what": "Definições de quais informações devem vir do projeto de OB", "owner": "Eduardo Curti", "due": "2026-08-15", "kr": "Processo (não puxa KR)", "measure": "Ter novo processo de handoff finalizado e executado", "status": "todo", "origem": "Processos · Âncora", "sintoma": "Processos de handoff atuais (comercial e onboarding) não são efetivos", "updatedAt": 0, "movedBy": ""}, {"id": "dny8ccd", "what": "Elaborar relatório de performance/comercial de resultados para as montadoras", "owner": "Eduardo Curti", "due": "2026-09-01", "kr": "KR6 · Oportunidades pro comercial", "measure": "Ter o primeiro relatório finalizado/elaborado e enviado", "status": "todo", "origem": "Comercial · Âncora", "sintoma": "Diminuição do escopo contratual para EO GM do novo contrato GM", "updatedAt": 0, "movedBy": ""}, {"id": "19d33ut", "what": "Criar um acompanhamento de tarefas de suporte para visibilidade geral do time de EO", "owner": "Eduardo Wenceslau", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Ter o acompanhamento entregue", "status": "todo", "origem": "Processos · Rocha", "sintoma": "Dificuldade nas priorizações junto ao time de suporte", "updatedAt": 0, "movedBy": ""}, {"id": "ypw44bh", "what": "Elaborar um processo de identificação de problemas críticos, gatilho e fluxo de trabalho", "owner": "Eduardo Wenceslau", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Processo criado e documentado", "status": "todo", "origem": "Processos · Vento", "sintoma": "Melhor organização das informações dos EO's ", "updatedAt": 0, "movedBy": ""}, {"id": "f1xgpyy", "what": "Buscar formas de fortalecer e melhorar o relacionamento com a Stellantis", "owner": "Jônatas Lenotti", "due": "2026-09-01", "kr": "KR5 · Reativar dormentes / segurar churn", "measure": "Reunião com Stellantis realizada e ações planejadas", "status": "todo", "origem": "Concorrência · Rocha", "sintoma": "Possibilidade de aumento de churn com um novo integrador concorrente homologado pela Stellantis", "updatedAt": 0, "movedBy": ""}, {"id": "zw7ap99", "what": "Criar uma trilha do conhecimento para marketplaces - Mercado Livre, Shopee e Magalu", "owner": "Jônatas Lenotti", "due": "2026-09-01", "kr": "KR4 · Levar \"só ML\" p/ ML+Shopee", "measure": "Ter o treinamento definido e agendado", "status": "todo", "origem": "Capacitações e Treinamentos · Ilha", "sintoma": "Capacitação técnica da Equipe", "updatedAt": 0, "movedBy": ""}, {"id": "db581ip", "what": "Criar Dashboard ou app de acompanhamento de performance de cada EO (painel de EO)", "owner": "Jônatas Lenotti", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Ter o painel funcionado, publicado e ativo", "status": "todo", "origem": "Comercial · Âncora", "sintoma": "Diminuição do escopo contratual para EO GM do novo contrato GM", "updatedAt": 0, "movedBy": ""}, {"id": "h059991", "what": "Criar um processo para solicitação, priorização e acompanhamento de iniciativas de melhorias para a Alephee", "owner": "Lucas Alves", "due": "2026-09-01", "kr": "KR5 · Reativar dormentes / segurar churn", "measure": "Processo criado, aprovado pelo time de EO e rodando.", "status": "todo", "origem": "Processos · Ilha", "sintoma": "Melhorar conteúdos do Alephee Academy", "updatedAt": 0, "movedBy": ""}, {"id": "qmnurlt", "what": "Criar um workshop sobre serviços, identificação de oportunidade e técnicas de vendas", "owner": "Lucas Alves", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Agendar e executar o primeiro workshop", "status": "todo", "origem": "Comercial · Vento", "sintoma": "Vendas GM de consultoria e serviços", "updatedAt": 0, "movedBy": ""}, {"id": "1kpbru6", "what": "Criar uma SQUAD inter equipes para novas funcionalidades que possa atuar proativamente com o time atual de QA.", "owner": "Lucas Xavier", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Criar a Squad e começarem as reuniões", "status": "todo", "origem": "Processos · Rocha", "sintoma": "Dificuldade nas priorizações junto ao time de suporte", "updatedAt": 0, "movedBy": ""}, {"id": "3snddc3", "what": "Criar workshop de capacitações sobre novas funcionalidades", "owner": "Matheus Carvalho", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Agendar primeiro workshop", "status": "todo", "origem": "Comunicação · Âncora", "sintoma": "Falta de comunicação por parte de produtos das novas funcionalidades", "updatedAt": 0, "movedBy": ""}, {"id": "bugfsz8", "what": "Criar um material/capacitação sobre Peças Chevrolet", "owner": "Wilson Silva", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Ter o manual elaborado e publicado", "status": "todo", "origem": "Capacitações e Treinamentos · Ilha", "sintoma": "Capacitação técnica da Equipe", "updatedAt": 0, "movedBy": ""}, {"id": "n6tatm1", "what": "Melhores do Ano Alephee - TOP SELLERS", "owner": "Eduardo Wenceslau", "due": "2026-10-01", "kr": "KR5 · Reativar dormentes / segurar churn", "measure": "Ter a estrutura definida e elaborada da premiação", "status": "todo", "origem": "Reconhecimento · Ilha", "sintoma": "Celebrações entre equipes de resultados (Premiações)", "updatedAt": 0, "movedBy": ""}, {"id": "wbkpu2c", "what": "Criar um relatório de performance e operações para os sellers", "owner": "Jônatas Lenotti", "due": "2026-10-01", "kr": "KR2 · GMV da carteira ↑", "measure": "Ter o relatório aprovado e enviado para os sellers priorizados.", "status": "todo", "origem": "Processos · Ilha", "sintoma": "Melhorar conteúdos do Alephee Academy", "updatedAt": 0, "movedBy": ""}, {"id": "pcw4yrj", "what": "Manter recorrência de reuniões presenciais", "owner": "Jônatas Lenotti", "due": "2026-10-01", "kr": "Processo (não puxa KR)", "measure": "Agendar próxima reunião", "status": "todo", "origem": "Processos · Vento", "sintoma": "Melhor organização das informações dos EO's ", "updatedAt": 0, "movedBy": ""}, {"id": "w4kcx8w", "what": "Trilha de conhecimento EO Lucão - Temas mais importantes (mais urgentes)", "owner": "Lucas Xavier", "due": "2026-10-01", "kr": "Processo (não puxa KR)", "measure": "Ter a trilha do conhecimento elaborada e em execução", "status": "todo", "origem": "Capacitações e Treinamentos · Rocha", "sintoma": "Time com conhecimentos desnivelados e concentrados em pessoas específicas", "updatedAt": 0, "movedBy": ""}, {"id": "whsy5lv", "what": "Criar um processo de onboarding com documentação em cada etapa", "owner": "Matheus Carvalho", "due": "2026-10-01", "kr": "Processo (não puxa KR)", "measure": "Ter o processo criado, com documentos e alinhamento com o RH", "status": "todo", "origem": "Capacitações e Treinamentos · Rocha", "sintoma": "Time com conhecimentos desnivelados e concentrados em pessoas específicas", "updatedAt": 0, "movedBy": ""}, {"id": "kmnprtf", "what": "Elaborar um ritual de celebração entre time e premiação com os melhores EO's do ano", "owner": "Jônatas Lenotti", "due": "2026-11-01", "kr": "Processo (não puxa KR)", "measure": "Ter a estrutura definida, critérios, elegibilidade, etc", "status": "todo", "origem": "Reconhecimento · Ilha", "sintoma": "Celebrações entre equipes de resultados (Premiações)", "updatedAt": 0, "movedBy": ""}, {"id": "xg0agk3", "what": "Desenvolver uma Alephee Academy com base nos conteúdos gerados pelo time de EO e outras equipes", "owner": "Lucas Xavier", "due": "2027-01-01", "kr": "Processo (não puxa KR)", "measure": "Ter a nova Alephee Academy publicada", "status": "todo", "origem": "Processos · Ilha", "sintoma": "Melhorar conteúdos do Alephee Academy", "updatedAt": 0, "movedBy": ""}], "owners": ["Eduardo Curti", "Eduardo Wenceslau", "Jônatas Lenotti", "Lucas Alves", "Lucas Xavier", "Matheus Carvalho", "Wilson Silva"], "krs": ["KR2 · GMV da carteira ↑", "KR4 · Levar \"só ML\" p/ ML+Shopee", "KR5 · Reativar dormentes / segurar churn", "KR6 · Oportunidades pro comercial", "Processo (não puxa KR)"]};
@@ -206,9 +247,19 @@ let state={tasks:JSON.parse(JSON.stringify(SEED.tasks)),krs:SEED.krs.slice(),krs
 const openCards=new Set();
 const drafts={};
 const uid=()=>Math.random().toString(36).slice(2,10);
-const MENTION_NAMES=SEED.owners.slice();
+let PEOPLE=SEED.owners.map(o=>({nome:o,email:'',pode_ser_dono:true}));
+const PEOPLE_NAMES=()=>PEOPLE.map(p=>p.nome);
+const OWNERS=()=>PEOPLE.filter(p=>p.pode_ser_dono).map(p=>p.nome);
+const MENTION_NAMES={get names(){return PEOPLE_NAMES();}};
+async function loadPessoas(){
+  if(!sb)return;
+  try{
+    const r=await sb.from('pessoas').select('nome,email,pode_ser_dono').order('nome');
+    if(!r.error&&r.data&&r.data.length)PEOPLE=r.data;
+  }catch(e){}
+}
 const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-function extractMentions(txt){return MENTION_NAMES.filter(n=>txt.indexOf('@'+n)!==-1);}
+function extractMentions(txt){return PEOPLE_NAMES().filter(n=>txt.indexOf('@'+n)!==-1);}
 function notifyEvent(type,t,extra,text,mentions){
   if(!shared||!sb)return;
   sb.functions.invoke('notify',{body:{
@@ -303,6 +354,7 @@ async function load(){
   }
 }
 function save(){
+  if(!CAN_EDIT)return;
   clearTimeout(saveTimer);
   saveTimer=setTimeout(pushShared,300);
 }
@@ -375,7 +427,7 @@ function cardHTML(t){
   const idx=ORDER.indexOf(t.status);
   const nc=(t.comments||[]).length, nf=(t.files||[]).length;
   const isOpen=openCards.has(t.id);
-  return '<div class="card '+dc+(isDone?' done-card':'')+(isOpen?' open':'')+'" draggable="true" data-id="'+t.id+'">'
+  return '<div class="card '+dc+(isDone?' done-card':'')+(isOpen?' open':'')+'" draggable="'+(CAN_EDIT?'true':'false')+'" data-id="'+t.id+'">'
     +'<div class="what">'+esc(t.what)+'</div>'
     +'<div class="chips">'
     +(dc==='late'?'<span class="chip status-flag">ATRASADA</span>':'')
@@ -386,26 +438,26 @@ function cardHTML(t){
     +(nf?'<span class="chip badge">📎 '+nf+'</span>':'')
     +'</div>'
     +'<div class="cardfoot">'
-    +'<button class="mv" data-mv="-1" '+(idx===0?'disabled':'')+' title="Mover pra trás">◀</button>'
-    +'<button class="mv" data-mv="1" '+(idx===2?'disabled':'')+' title="Mover pra frente">▶</button>'
+    +(CAN_EDIT?'<button class="mv" data-mv="-1" '+(idx===0?'disabled':'')+' title="Mover pra trás">◀</button>'
+    +'<button class="mv" data-mv="1" '+(idx===2?'disabled':'')+' title="Mover pra frente">▶</button>':'')
     +'<button class="exp-t" data-open="1">'+(isOpen?'detalhes ▴':'detalhes ▾')+'</button>'
     +'</div>'
     +'<div class="details">'
     +'<div class="row"><div class="lab">COMO MEDIMOS</div>'+esc(t.measure)+'</div>'
     +(t.origem?'<div class="row"><div class="lab">TEMA DE ORIGEM</div>'+esc(t.origem)+(t.sintoma?' — '+esc(t.sintoma):'')+'</div>':'')
     +(t.movedBy?'<div class="row"><div class="lab">ÚLTIMA ATUALIZAÇÃO</div>'+esc(t.movedBy)+'</div>':'')
-    +'<div class="edit">'
-    +'<select data-ed="owner">'+SEED.owners.map(o=>'<option '+(o===t.owner?'selected':'')+'>'+esc(o)+'</option>').join('')+'</select>'
+    +(CAN_EDIT?'<div class="edit">'
+    +'<select data-ed="owner">'+OWNERS().map(o=>'<option '+(o===t.owner?'selected':'')+'>'+esc(o)+'</option>').join('')+(OWNERS().indexOf(t.owner)===-1?'<option selected>'+esc(t.owner)+'</option>':'')+'</select>'
     +'<input type="date" data-ed="due" value="'+t.due+'">'
     +'<select data-ed="kr">'+krOptions(t.kr)+'</select>'
-    +'</div>'
+    +'</div>':'')
     +'<div class="row" style="margin-top:12px"><div class="lab">COMENTÁRIOS</div>'
     +(t.comments||[]).map(cm=>'<div class="cm"><b>'+esc(cm.by||'?')+'</b><span class="cm-at">'+fmtAt(cm.at||0)+'</span><br>'+esc(cm.text)+'</div>').join('')
-    +'<div class="cm-new"><input class="cm-input" placeholder="Comenta... use @ pra marcar alguém" maxlength="500"><button class="cm-btn">Enviar</button></div>'
+    +(CAN_EDIT?'<div class="cm-new"><input class="cm-input" placeholder="Comenta... use @ pra marcar alguém" maxlength="500"><button class="cm-btn">Enviar</button></div>':'')
     +'</div>'
     +'<div class="row" style="margin-top:12px"><div class="lab">ANEXOS</div>'
     +(t.files||[]).map(f=>'<div class="file-row"><a href="'+esc(f.url)+'" target="_blank" rel="noopener">📎 '+esc(f.name)+'</a><span class="by">por '+esc(f.by||'?')+' · '+fmtAt(f.at||0)+'</span></div>').join('')
-    +'<label class="up-btn">＋ Anexar arquivo<input type="file" hidden></label>'
+    +(CAN_EDIT?'<label class="up-btn">＋ Anexar arquivo<input type="file" hidden></label>':'')
     +'</div>'
     +'</div>'
     +'</div>';
@@ -429,7 +481,7 @@ function renderAll(doSave){
   document.getElementById('prog-txt').textContent=done+' de '+state.tasks.length;
   document.getElementById('prog-fill').style.width=(done/state.tasks.length*100)+'%';
   // placar por dono
-  const foot=SEED.owners.map(o=>{
+  const foot=OWNERS().map(o=>{
     const mine=state.tasks.filter(t=>t.owner===o);
     const pend=mine.filter(t=>t.status!=='done').length;
     const late=mine.filter(t=>dueClass(t)==='late').length;
@@ -489,7 +541,7 @@ function bind(){
         const mm=/@([^@\s][^@]*)?$/.exec(upto);
         if(mm===null&&upto.slice(-1)!=='@')return;
         const frag=mm&&mm[1]?norm(mm[1]):'';
-        const opts=MENTION_NAMES.filter(n=>norm(n).indexOf(frag)===0||norm(n.split(' ')[0]).indexOf(frag)===0);
+        const opts=PEOPLE_NAMES().filter(n=>norm(n).indexOf(frag)===0||norm(n.split(' ')[0]).indexOf(frag)===0);
         if(!opts.length)return;
         const dd=document.createElement('div');dd.className='mn-dd';
         opts.forEach(n=>{
@@ -521,6 +573,7 @@ function bind(){
     col.ondragleave=()=>col.classList.remove('over');
     col.ondrop=e=>{
       e.preventDefault();col.classList.remove('over');
+      if(!CAN_EDIT)return;
       const t=byId(e.dataTransfer.getData('text/plain'));
       if(t&&t.status!==col.dataset.st){t.status=col.dataset.st;t.updatedAt=Date.now();t.movedBy=USER;notifyEvent('status',t,NAMES[t.status]);toast(t.status==='done'?'Concluída! 🎉':'Movida pra '+NAMES[t.status]);renderAll();}
     };
@@ -536,7 +589,7 @@ function fillFilters(){
     vals.forEach(v=>{const op=document.createElement('option');op.value=v;op.textContent=labelFn?labelFn(v):v;el.appendChild(op);});
     if(vals.indexOf(cur)!==-1)el.value=cur;
   };
-  fill('f-owner',SEED.owners);
+  fill('f-owner',OWNERS());
   fill('f-kr',state.krs.slice());
   fill('f-mes',state.tasks.map(t=>mesKey(t.due)).filter((v,i,a)=>a.indexOf(v)===i).sort(),m=>mesLabel(m+'-01'));
   ['f-owner','f-kr','f-mes'].forEach(id=>document.getElementById(id).onchange=()=>renderAll(false));
@@ -558,6 +611,72 @@ document.getElementById('impFile').onchange=e=>{
     toast('Importado ✓');renderAll();}catch(err){toast('Arquivo inválido.');}};
   r.readAsText(f);e.target.value='';
 };
+/* ---------- gerenciador de pessoas ---------- */
+function ppRow(p){
+  return '<div class="pp-row" data-old="'+esc(p.nome)+'">'
+    +'<input type="text" value="'+esc(p.nome)+'" maxlength="40" placeholder="Nome">'
+    +'<input type="email" value="'+esc(p.email||'')+'" maxlength="60" placeholder="email">'
+    +'<label class="pp-dono"><input type="checkbox" '+(p.pode_ser_dono?'checked':'')+'>dono</label>'
+    +'<button class="kr-del" title="Remover">✕</button></div>';
+}
+function openPpModal(){
+  const list=document.getElementById('ppList');
+  list.innerHTML=PEOPLE.map(ppRow).join('');
+  list.querySelectorAll('.kr-del').forEach(b=>b.onclick=()=>b.closest('.pp-row').remove());
+  document.getElementById('ppModal').style.display='flex';
+}
+document.getElementById('ppBtn').onclick=openPpModal;
+document.getElementById('ppCancel').onclick=()=>document.getElementById('ppModal').style.display='none';
+document.getElementById('ppAddBtn').onclick=()=>{
+  const n=document.getElementById('ppNewNome').value.trim();
+  const e=document.getElementById('ppNewEmail').value.trim();
+  if(!n||!e){toast('Preenche nome e e-mail.');return;}
+  const list=document.getElementById('ppList');
+  const div=document.createElement('div');
+  div.innerHTML=ppRow({nome:n,email:e,pode_ser_dono:false});
+  const row=div.firstChild;row.dataset.old='';
+  row.querySelector('.kr-del').onclick=()=>row.remove();
+  list.appendChild(row);
+  document.getElementById('ppNewNome').value='';document.getElementById('ppNewEmail').value='';
+};
+document.getElementById('ppSave').onclick=async()=>{
+  if(!shared){toast('Gerenciar pessoas exige conexão.');return;}
+  const rows=[...document.querySelectorAll('#ppList .pp-row')];
+  const finals=[];const renames={};
+  for(const r of rows){
+    const old=r.dataset.old;
+    const nome=r.querySelector('input[type=text]').value.trim();
+    const email=r.querySelector('input[type=email]').value.trim();
+    const dono=r.querySelector('input[type=checkbox]').checked;
+    if(!nome||!email)continue;
+    finals.push({nome,email,pode_ser_dono:dono});
+    if(old&&old!==nome)renames[old]=nome;
+  }
+  if(!finals.length){toast('Deixa pelo menos uma pessoa.');return;}
+  const removed=PEOPLE.map(p=>p.nome).filter(n=>finals.every(f=>f.nome!==n)&&!(n in renames));
+  try{
+    for(const old of Object.keys(renames)){
+      await sb.from('pessoas').update({nome:renames[old]}).eq('nome',old);
+    }
+    for(const f of finals){
+      await sb.from('pessoas').upsert(f,{onConflict:'nome'});
+    }
+    for(const n of removed){
+      await sb.from('pessoas').delete().eq('nome',n);
+    }
+    // renomeou pessoa -> cards e comentários dela acompanham
+    const now=Date.now();let touched=0;
+    state.tasks.forEach(t=>{
+      if(renames[t.owner]){t.owner=renames[t.owner];t.updatedAt=now;t.movedBy=USER;touched++;}
+    });
+    await loadPessoas();
+    fillFilters();
+    document.getElementById('ppModal').style.display='none';
+    toast('Pessoas salvas ✓'+(touched?' · '+touched+' card(s) atualizados':''));
+    renderAll();
+  }catch(e){toast('Falha ao salvar pessoas.');}
+};
+
 /* ---------- gerenciador de vínculos ---------- */
 function openKrModal(){
   const list=document.getElementById('krList');
@@ -602,25 +721,86 @@ document.getElementById('krSave').onclick=()=>{
 let toastTimer=null;
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1900);}
 
-function askWho(cb){
-  let n='';try{n=localStorage.getItem('quadro_eo_user')||'';}catch(e){}
-  if(n){USER=n;cb();return;}
-  const m=document.getElementById('whoModal');m.style.display='flex';
-  const go=()=>{
-    const v=document.getElementById('whoInput').value.trim();
-    if(!v)return;
-    USER=v;try{localStorage.setItem('quadro_eo_user',v);}catch(e){}
-    m.style.display='none';cb();
+/* ---------- autenticação: e-mail + código (Supabase Auth) ---------- */
+function showErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';}
+function hideErrs(){['loginErr1','loginErr2'].forEach(i=>document.getElementById(i).style.display='none');}
+function openLogin(){
+  hideErrs();
+  document.querySelector('.login-step1').style.display='block';
+  document.querySelector('.login-step2').style.display='none';
+  document.getElementById('loginModal').style.display='flex';
+}
+function wireLogin(){
+  document.getElementById('authBtn').onclick=openLogin;
+  document.getElementById('loginClose').onclick=()=>document.getElementById('loginModal').style.display='none';
+  document.getElementById('loginBack').onclick=()=>{hideErrs();document.querySelector('.login-step1').style.display='block';document.querySelector('.login-step2').style.display='none';};
+  document.getElementById('loginSend').onclick=async()=>{
+    hideErrs();
+    const email=document.getElementById('loginEmail').value.trim().toLowerCase();
+    if(!email||email.indexOf('@')===-1){showErr('loginErr1','Digita um e-mail válido.');return;}
+    try{
+      const chk=await sb.rpc('email_autorizado',{p_email:email});
+      if(chk.error)throw chk.error;
+      if(!chk.data){showErr('loginErr1','Esse e-mail não está autorizado. Fala com o Jônatas.');return;}
+      const r=await sb.auth.signInWithOtp({email:email,options:{shouldCreateUser:true}});
+      if(r.error)throw r.error;
+      document.getElementById('loginEmailShow').textContent=email;
+      document.querySelector('.login-step1').style.display='none';
+      document.querySelector('.login-step2').style.display='block';
+      document.getElementById('loginCode').focus();
+    }catch(e){showErr('loginErr1','Não consegui enviar o código. Tenta de novo em 1 minuto.');}
   };
-  document.getElementById('whoBtn').onclick=go;
-  document.getElementById('whoInput').onkeydown=e=>{if(e.key==='Enter')go();};
-  document.getElementById('whoInput').focus();
+  document.getElementById('loginVerify').onclick=async()=>{
+    hideErrs();
+    const email=document.getElementById('loginEmailShow').textContent;
+    const code=document.getElementById('loginCode').value.trim();
+    if(!code){showErr('loginErr2','Cola o código do e-mail.');return;}
+    try{
+      const r=await sb.auth.verifyOtp({email:email,token:code,type:'email'});
+      if(r.error)throw r.error;
+      location.reload();
+    }catch(e){showErr('loginErr2','Código inválido ou expirado. Confere e tenta de novo.');}
+  };
+}
+async function resolveIdentity(){
+  CAN_EDIT=false;USER='';MY_EMAIL='';
+  try{
+    const s=await sb.auth.getSession();
+    const email=s&&s.data&&s.data.session&&s.data.session.user&&s.data.session.user.email;
+    if(!email)return;
+    MY_EMAIL=email.toLowerCase();
+    await loadPessoas();
+    const me=PEOPLE.find(p=>(p.email||'').toLowerCase()===MY_EMAIL);
+    if(me){USER=me.nome;CAN_EDIT=true;}
+  }catch(e){}
+}
+function applyMode(){
+  document.getElementById('viewerNote').style.display=CAN_EDIT?'none':'block';
+  document.getElementById('authBtn').style.display=CAN_EDIT?'none':'inline-block';
+  document.getElementById('impBtn').style.display=CAN_EDIT?'inline-block':'none';
+  document.getElementById('krBtn').style.display=CAN_EDIT?'inline-block':'none';
+  const chip=document.getElementById('authChip');
+  if(CAN_EDIT){
+    chip.innerHTML='👤 <b>'+esc(USER)+'</b> · <a id="logoutLink">sair</a>';
+    document.getElementById('logoutLink').onclick=async()=>{await sb.auth.signOut();location.reload();};
+  }else chip.innerHTML='';
+  if(CAN_EDIT&&MY_EMAIL==='jlenotti@alephee.com')document.getElementById('ppBtn').style.display='inline-block';
 }
 (async()=>{
   await load();
+  await resolveIdentity();
+  applyMode();
+  wireLogin();
   fillFilters();
   renderAll(false);
-  askWho(()=>{toast('Bem-vindo ao quadro, '+USER+'!');});
+  if(CAN_EDIT)toast('Bem-vindo ao quadro, '+USER.split(' ')[0]+'!');
+  if(shared&&sb&&CAN_EDIT){
+    sb.channel('pessoas-live')
+      .on('postgres_changes',{event:'*',schema:'public',table:'pessoas'},async()=>{
+        await loadPessoas();fillFilters();renderAll(false);
+      })
+      .subscribe();
+  }
   setInterval(()=>pullShared(true),60000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)pullShared(true);});
 })();
