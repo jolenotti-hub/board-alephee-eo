@@ -49,6 +49,10 @@
   .cm-new{display:flex;gap:6px;margin-top:6px}
   .cm-new input{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12.5px}
   .cm-btn{background:var(--purple);color:#fff;font-weight:700;border-radius:8px;padding:7px 13px;font-size:12.5px}
+  .cm-new{position:relative}
+  .mn-dd{position:absolute;left:0;bottom:calc(100% + 4px);background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow);z-index:40;min-width:210px;overflow:hidden}
+  .mn-dd div{padding:8px 12px;font-size:13px;cursor:pointer}
+  .mn-dd div:hover{background:var(--paper);color:var(--purple);font-weight:600}
   .file-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12.5px}
   .file-row a{color:var(--purple);font-weight:600;text-decoration:none;word-break:break-all}
   .file-row a:hover{text-decoration:underline}
@@ -202,6 +206,16 @@ let state={tasks:JSON.parse(JSON.stringify(SEED.tasks)),krs:SEED.krs.slice(),krs
 const openCards=new Set();
 const drafts={};
 const uid=()=>Math.random().toString(36).slice(2,10);
+const MENTION_NAMES=SEED.owners.slice();
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+function extractMentions(txt){return MENTION_NAMES.filter(n=>txt.indexOf('@'+n)!==-1);}
+function notifyEvent(type,t,extra,text,mentions){
+  if(!shared||!sb)return;
+  sb.functions.invoke('notify',{body:{
+    type:type,taskTitle:t.what,owner:t.owner,by:USER,
+    extra:extra||'',text:text||'',mentions:mentions||[]
+  }}).catch(()=>{});
+}
 function fmtAt(ms){const d=new Date(ms);const p=n=>('0'+n).slice(-2);return p(d.getDate())+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes());}
 function unionById(a,b){
   const out=(a||[]).slice();const seen={};out.forEach(x=>seen[x.id]=1);let added=false;
@@ -306,6 +320,7 @@ async function uploadFile(taskId,file,lbl){
     const pu=sb.storage.from('anexos').getPublicUrl(path);
     if(!t.files)t.files=[];
     t.files.push({id:uid(),name:file.name,url:pu.data.publicUrl,by:USER,at:Date.now(),size:file.size});
+    notifyEvent('file',t,file.name);
     toast('Anexo enviado ✓');renderAll();
   }catch(e){
     toast('Falha no upload. O bucket "anexos" existe no Supabase?');
@@ -386,7 +401,7 @@ function cardHTML(t){
     +'</div>'
     +'<div class="row" style="margin-top:12px"><div class="lab">COMENTÁRIOS</div>'
     +(t.comments||[]).map(cm=>'<div class="cm"><b>'+esc(cm.by||'?')+'</b><span class="cm-at">'+fmtAt(cm.at||0)+'</span><br>'+esc(cm.text)+'</div>').join('')
-    +'<div class="cm-new"><input class="cm-input" placeholder="Escreve um comentário..." maxlength="500"><button class="cm-btn">Enviar</button></div>'
+    +'<div class="cm-new"><input class="cm-input" placeholder="Comenta... use @ pra marcar alguém" maxlength="500"><button class="cm-btn">Enviar</button></div>'
     +'</div>'
     +'<div class="row" style="margin-top:12px"><div class="lab">ANEXOS</div>'
     +(t.files||[]).map(f=>'<div class="file-row"><a href="'+esc(f.url)+'" target="_blank" rel="noopener">📎 '+esc(f.name)+'</a><span class="by">por '+esc(f.by||'?')+' · '+fmtAt(f.at||0)+'</span></div>').join('')
@@ -443,7 +458,7 @@ function bind(){
       e.stopPropagation();
       const t=byId(c.dataset.id);
       const i=ORDER.indexOf(t.status)+(+b.dataset.mv);
-      if(i>=0&&i<3){t.status=ORDER[i];t.updatedAt=Date.now();t.movedBy=USER;toast(t.status==='done'?'Concluída! 🎉':'Movida pra '+NAMES[t.status]);renderAll();}
+      if(i>=0&&i<3){t.status=ORDER[i];t.updatedAt=Date.now();t.movedBy=USER;notifyEvent('status',t,NAMES[t.status]);toast(t.status==='done'?'Concluída! 🎉':'Movida pra '+NAMES[t.status]);renderAll();}
     });
     const opener=c.querySelector('[data-open]');
     opener.onclick=e=>{
@@ -461,11 +476,35 @@ function bind(){
         if(!t.comments)t.comments=[];
         t.comments.push({id:uid(),by:USER,at:Date.now(),text:txt});
         delete drafts[t.id];
+        notifyEvent('comment',t,'',txt,extractMentions(txt));
         toast('Comentário publicado ✓');renderAll();
       };
       cmBtn.onclick=e=>{e.stopPropagation();sendCm();};
       cmInp.onclick=e=>e.stopPropagation();
-      cmInp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')sendCm();};
+      cmInp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'&&!c.querySelector('.mn-dd'))sendCm();};
+      cmInp.oninput=()=>{
+        const holder=cmInp.parentElement;
+        const oldDd=holder.querySelector('.mn-dd');if(oldDd)oldDd.remove();
+        const upto=cmInp.value.slice(0,cmInp.selectionStart);
+        const mm=/@([^@\s][^@]*)?$/.exec(upto);
+        if(mm===null&&upto.slice(-1)!=='@')return;
+        const frag=mm&&mm[1]?norm(mm[1]):'';
+        const opts=MENTION_NAMES.filter(n=>norm(n).indexOf(frag)===0||norm(n.split(' ')[0]).indexOf(frag)===0);
+        if(!opts.length)return;
+        const dd=document.createElement('div');dd.className='mn-dd';
+        opts.forEach(n=>{
+          const o=document.createElement('div');o.textContent='@ '+n;
+          o.onmousedown=e2=>{
+            e2.preventDefault();e2.stopPropagation();
+            const start=upto.lastIndexOf('@');
+            cmInp.value=cmInp.value.slice(0,start)+'@'+n+' '+cmInp.value.slice(cmInp.selectionStart);
+            dd.remove();cmInp.focus();
+          };
+          dd.appendChild(o);
+        });
+        holder.appendChild(dd);
+      };
+      cmInp.onblur=()=>setTimeout(()=>{const dd=cmInp.parentElement.querySelector('.mn-dd');if(dd)dd.remove();},150);
     }
     const upLbl=c.querySelector('.up-btn');
     if(upLbl){
@@ -483,7 +522,7 @@ function bind(){
     col.ondrop=e=>{
       e.preventDefault();col.classList.remove('over');
       const t=byId(e.dataTransfer.getData('text/plain'));
-      if(t&&t.status!==col.dataset.st){t.status=col.dataset.st;t.updatedAt=Date.now();t.movedBy=USER;toast(t.status==='done'?'Concluída! 🎉':'Movida pra '+NAMES[t.status]);renderAll();}
+      if(t&&t.status!==col.dataset.st){t.status=col.dataset.st;t.updatedAt=Date.now();t.movedBy=USER;notifyEvent('status',t,NAMES[t.status]);toast(t.status==='done'?'Concluída! 🎉':'Movida pra '+NAMES[t.status]);renderAll();}
     };
   });
 }
