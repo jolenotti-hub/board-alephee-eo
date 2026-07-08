@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quadro de Ações - Segundo Semestre 2026 - Time EO - Alephee</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy:#331A51; --deep:#271140; --coral:#E45A72; --green:#1FA97D; --sol:#7FD1AE;
+    --purple:#632DA6; --gold:#E08A1E; --ink:#2B2540; --paper:#F7F5FB; --white:#FFFFFF;
+    --line:#E7E3F0; --mut:#8A83A3; --shadow:0 6px 22px rgba(39,17,64,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--paper);line-height:1.45}
+  h1,h2,h3,.serif{font-family:Georgia,'Times New Roman',serif}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  input,select{font-family:inherit;font-size:13.5px;color:var(--ink)}
+  ::selection{background:var(--gold);color:#fff}
+
+  header{background:linear-gradient(120deg,var(--deep),var(--navy));color:#fff;padding:15px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;position:sticky;top:0;z-index:30}
+  .brand{display:flex;flex-direction:column;gap:1px;margin-right:auto}
+  .brand h1{font-size:21px;letter-spacing:.2px}
+  .brand p{font-size:12.5px;color:#C9C1DC}
+  .logo-row{display:flex;align-items:center;gap:12px;align-self:flex-start;margin-bottom:7px}
+  .logo{height:30px;width:119px;display:block;object-fit:contain}
+  .flag{width:26px;height:17px;border-radius:3px;display:block;box-shadow:0 0 0 1px rgba(255,255,255,.22)}
+  .dots{display:flex;gap:5px;margin-bottom:5px}
+  .dots i{width:11px;height:11px;border-radius:50%;display:block}
+  .prog{display:flex;flex-direction:column;gap:5px;min-width:210px}
+  .prog .lbl{font-size:12.5px;color:#C9C1DC;display:flex;justify-content:space-between}
+  .prog .track{height:9px;border-radius:6px;background:rgba(255,255,255,.14);overflow:hidden}
+  .prog .fill{height:100%;background:linear-gradient(90deg,var(--green),var(--sol));border-radius:6px;transition:width .3s}
+  .tools{display:flex;gap:7px;flex-wrap:wrap}
+  .tools button{color:#fff;border:1px solid rgba(255,255,255,.28);padding:8px 11px;border-radius:8px;font-size:12.5px;font-weight:600;transition:.15s}
+  .tools button:hover{background:rgba(255,255,255,.14)}
+  .sync-chip{font-weight:700;color:#9CE8C6}
+  .sync-chip.local{color:#C9C1DC}
+  .sync-chip.busy{color:#F5C86B}
+  .who-modal{position:fixed;inset:0;background:rgba(39,17,64,.55);display:flex;align-items:center;justify-content:center;z-index:60}
+  .who-box{background:#fff;border-radius:14px;padding:26px 28px;max-width:360px;width:92%;box-shadow:var(--shadow)}
+  .who-box h2{font-size:19px;color:var(--navy);margin-bottom:6px}
+  .who-box p{font-size:13px;color:var(--mut);margin-bottom:14px}
+  .who-box input{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+  .who-box button{width:100%;background:var(--coral);color:#fff;font-weight:700;padding:11px;border-radius:9px;font-size:14.5px}
+  .badge{background:#EFE8FA;border-color:#DCCDF2;color:var(--purple)}
+  .cm{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:6px;font-size:12.5px}
+  .cm b{color:var(--navy)} .cm .cm-at{color:var(--mut);font-size:11px;margin-left:6px}
+  .cm-new{display:flex;gap:6px;margin-top:6px}
+  .cm-new input{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12.5px}
+  .cm-btn{background:var(--purple);color:#fff;font-weight:700;border-radius:8px;padding:7px 13px;font-size:12.5px}
+  .file-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12.5px}
+  .file-row a{color:var(--purple);font-weight:600;text-decoration:none;word-break:break-all}
+  .file-row a:hover{text-decoration:underline}
+  .file-row .by{color:var(--mut);font-size:11px;white-space:nowrap}
+  .up-btn{display:inline-block;border:1.5px dashed #C9BBE2;color:var(--purple);border-radius:8px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;margin-top:4px}
+  .up-btn.busy{opacity:.5;pointer-events:none}
+  .kr-box{background:#fff;border-radius:14px;padding:24px 26px;max-width:520px;width:94%;box-shadow:var(--shadow);max-height:82vh;overflow:auto}
+  .kr-box h2{font-size:19px;color:var(--navy);margin-bottom:4px}
+  .kr-box p{font-size:12.5px;color:var(--mut);margin-bottom:14px}
+  .kr-row{display:flex;gap:6px;margin-bottom:8px;align-items:center}
+  .kr-row input{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+  .kr-del{color:var(--coral);font-size:17px;font-weight:700;padding:4px 8px}
+  .kr-add{display:flex;gap:6px;margin:12px 0 16px}
+  .kr-add input{flex:1;border:1.5px dashed #C9BBE2;border-radius:8px;padding:8px 10px;font-size:13px}
+  .kr-add button{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-weight:700;color:var(--purple);font-size:13px}
+  .kr-actions{display:flex;gap:8px}
+  .kr-actions .primary{flex:1;background:var(--coral);color:#fff;font-weight:700;padding:11px;border-radius:9px;font-size:14px}
+  .kr-actions .ghost{background:var(--paper);border:1px solid var(--line);color:var(--ink);padding:11px 16px;border-radius:9px;font-size:14px}
+
+  .bar{display:flex;gap:10px;align-items:center;padding:13px 24px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:69px;z-index:20}
+  .bar select,.bar input[type=search]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;min-width:150px}
+  .bar input[type=search]{flex:1;min-width:180px}
+  .chipset{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--mut)}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+
+  main{padding:18px 24px 60px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:1500px;margin:0 auto}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  .col{background:#EFEAF7;border-radius:14px;padding:12px;min-height:300px;display:flex;flex-direction:column;gap:10px}
+  .col.over{outline:3px dashed var(--purple);outline-offset:-3px}
+  .col-h{display:flex;align-items:center;gap:9px;padding:4px 6px}
+  .col-h .dot{width:12px;height:12px;border-radius:50%}
+  .col-h h2{font-size:17px}
+  .col-h .cnt{margin-left:auto;background:#fff;color:var(--navy);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;border:1px solid var(--line)}
+  #c-todo .dot{background:var(--mut)} #c-doing .dot{background:var(--gold)} #c-done .dot{background:var(--green)}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 13px;box-shadow:var(--shadow);cursor:grab;transition:.12s}
+  .card:active{cursor:grabbing}
+  .card.dragging{opacity:.45;transform:rotate(1.2deg)}
+  .card.late{border:2px solid var(--coral);background:#FFF6F7}
+  .card.soon{border:2px solid var(--gold);background:#FFFBF2}
+  .card.done-card{opacity:.82}
+  .card.done-card .what{text-decoration:line-through;color:var(--mut)}
+  .what{font-size:14.5px;font-weight:600;margin-bottom:8px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .chip{font-size:11.5px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);white-space:nowrap}
+  .chip.owner{background:#EFE8FA;border-color:#DCCDF2;color:var(--purple);font-weight:600}
+  .chip.kr{background:#FDEEF1;border-color:#F5C4CE;color:#B43350;font-weight:700}
+  .chip.due{font-weight:600}
+  .chip.due.l{background:var(--coral);border-color:var(--coral);color:#fff}
+  .chip.due.s{background:var(--gold);border-color:var(--gold);color:#fff}
+  .chip.status-flag{background:var(--coral);color:#fff;border-color:var(--coral);font-weight:700;letter-spacing:.3px}
+  .cardfoot{display:flex;align-items:center;margin-top:9px;gap:6px}
+  .mv{border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:13px;color:var(--navy);background:#fff;font-weight:700}
+  .mv:hover{background:var(--paper)}
+  .mv:disabled{opacity:.3;cursor:default}
+  .exp-t{margin-left:auto;font-size:12px;color:var(--mut);font-weight:600}
+  .details{display:none;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;font-size:13px}
+  .card.open .details{display:block}
+  .details .row{margin-bottom:7px;color:var(--ink)}
+  .details .lab{font-size:11px;letter-spacing:1px;font-weight:700;color:var(--mut)}
+  .edit{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .edit select,.edit input{border:1px solid var(--line);border-radius:7px;padding:5px 7px;font-size:12.5px;background:#fff}
+
+  .board-foot{max-width:1500px;margin:0 auto;padding:0 24px 40px;display:flex;gap:8px;flex-wrap:wrap}
+  .of{background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:12.5px;color:var(--ink)}
+  .of b{color:var(--purple)}
+  .of .late-n{color:var(--coral);font-weight:700}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 20px;border-radius:10px;font-size:13.5px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;z-index:50}
+  .toast.show{opacity:1}
+  .empty{color:var(--mut);font-size:13px;text-align:center;padding:22px 8px;border:1.5px dashed #D8D0E8;border-radius:10px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo-row"><img class="logo" src="data:image/png;base64,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" alt="Alephee"><svg class="flag" viewBox="0 0 27 18" xmlns="http://www.w3.org/2000/svg" aria-label="Argentina"><rect width="27" height="18" fill="#74ACDF"/><rect y="6" width="27" height="6" fill="#FFFFFF"/><circle cx="13.5" cy="9" r="2" fill="#F6B40E"/></svg><svg class="flag" viewBox="0 0 27 18" xmlns="http://www.w3.org/2000/svg" aria-label="Brasil"><rect width="27" height="18" fill="#009B3A"/><polygon points="13.5,2.6 24.2,9 13.5,15.4 2.8,9" fill="#FEDF00"/><circle cx="13.5" cy="9" r="3.3" fill="#002776"/></svg></div>
+    <h1>Quadro de Ações · Segundo Semestre 2026 · Time EO · Alephee</h1>
+    <p>Plano do Planning H2 · quadro compartilhado em tempo real · <span id="sync" class="sync-chip">● conectando...</span></p>
+  </div>
+  <div class="prog">
+    <div class="lbl"><span>Progresso do plano</span><span id="prog-txt">0 de 28</span></div>
+    <div class="track"><div class="fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+  <div class="tools">
+    <button id="expBtn">Exportar JSON</button>
+    <button id="csvBtn">CSV p/ Excel</button>
+    <button id="impBtn">Importar</button>
+    <button id="krBtn">Vínculos</button>
+    <input type="file" id="impFile" accept=".json" style="display:none">
+  </div>
+</header>
+
+<div class="bar">
+  <select id="f-owner"><option value="">Todos os donos</option></select>
+  <select id="f-kr"><option value="">Todos os vínculos</option></select>
+  <select id="f-mes"><option value="">Todos os meses</option></select>
+  <input type="search" id="f-q" placeholder="Buscar tarefa...">
+  <span class="chipset legend"><span><i style="background:var(--coral)"></i>atrasada</span><span><i style="background:var(--gold)"></i>vence em 7 dias</span></span>
+</div>
+
+<main>
+  <section class="col" id="c-todo" data-st="todo">
+    <div class="col-h"><span class="dot"></span><h2>A fazer</h2><span class="cnt" id="n-todo">0</span></div>
+    <div class="cards" id="l-todo"></div>
+  </section>
+  <section class="col" id="c-doing" data-st="doing">
+    <div class="col-h"><span class="dot"></span><h2>Em andamento</h2><span class="cnt" id="n-doing">0</span></div>
+    <div class="cards" id="l-doing"></div>
+  </section>
+  <section class="col" id="c-done" data-st="done">
+    <div class="col-h"><span class="dot"></span><h2>Concluída</h2><span class="cnt" id="n-done">0</span></div>
+    <div class="cards" id="l-done"></div>
+  </section>
+</main>
+
+<div class="board-foot" id="ownerFoot"></div>
+<div class="toast" id="toast"></div>
+<div class="who-modal" id="krModal" style="display:none">
+  <div class="kr-box">
+    <h2>Gerenciar vínculos (KRs)</h2>
+    <p>Renomeia aqui e todos os cards com aquele vínculo atualizam juntos. Removeu um vínculo, os cards dele viram "Processo".</p>
+    <div id="krList"></div>
+    <div class="kr-add"><input id="krNew" placeholder="Novo vínculo (ex.: KR7 · Nome da métrica)" maxlength="60"><button id="krAddBtn">Adicionar</button></div>
+    <div class="kr-actions"><button class="ghost" id="krCancel">Cancelar</button><button class="primary" id="krSave">Salvar alterações</button></div>
+  </div>
+</div>
+<div class="who-modal" id="whoModal" style="display:none">
+  <div class="who-box">
+    <h2>Quem está no quadro?</h2>
+    <p>Seu nome aparece nas movimentações, pra todo mundo saber quem atualizou o quê.</p>
+    <input id="whoInput" placeholder="Seu nome" maxlength="30">
+    <button id="whoBtn">Entrar no quadro</button>
+  </div>
+</div>
+
+<script>
+const KEY='quadro_acoes_eo_local_v1';
+const SB_URL='https://hauovjaptcngftcgylty.supabase.co';
+const SB_KEY='sb_publishable_NgZPns5j40TAmL3Y27PM2w_qfQkDua0';
+const ROW='board';
+let USER='';
+let shared=false;
+let sb=null;
+const SEED={"tasks": [{"id": "60m0w1m", "what": "Definir métricas e OKR's para o time de EO", "owner": "Jônatas Lenotti", "due": "2026-07-10", "kr": "Processo (não puxa KR)", "measure": "Entregar métricas e ORK's", "status": "todo", "origem": "Comercial · Âncora", "sintoma": "Diminuição do escopo contratual para EO GM do novo contrato GM", "updatedAt": 0, "movedBy": ""}, {"id": "rewisbl", "what": "Listar os clientes em potencial que estão perdendo oportunidades", "owner": "Eduardo Curti", "due": "2026-07-15", "kr": "KR2 · GMV da carteira ↑", "measure": "Ter a lista pronta", "status": "todo", "origem": "Relacionamento · Âncora", "sintoma": "Tomadores de decisões (cliente) não enxergam potencial e valor no canal de vendas online (e-commerce)", "updatedAt": 0, "movedBy": ""}, {"id": "5n8rs0k", "what": "Alinhar com o time de OB a definição de DONE do projeto", "owner": "Eduardo Curti", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Novo processo de handoff aprovado e executado", "status": "todo", "origem": "Processos · Âncora", "sintoma": "Processos de handoff atuais (comercial e onboarding) não são efetivos", "updatedAt": 0, "movedBy": ""}, {"id": "n9wmu5l", "what": "Listar os problemas da Alephee que mais causam insafistação nos clientes atualmente", "owner": "Eduardo Curti", "due": "2026-08-01", "kr": "KR5 · Reativar dormentes / segurar churn", "measure": "Lista elaborada e enviada para os líderes Alephee", "status": "todo", "origem": "Concorrência · Rocha", "sintoma": "Possibilidade de aumento de churn com um novo integrador concorrente homologado pela Stellantis", "updatedAt": 0, "movedBy": ""}, {"id": "kddhfxc", "what": "Elaborar a apresentação de oportunidades, tamanho de mercado e potenciais do e-commerce (jornada de investimento x crescimento)", "owner": "Eduardo Curti", "due": "2026-08-01", "kr": "KR2 · GMV da carteira ↑", "measure": "Ter a apresentação finalizada", "status": "todo", "origem": "Relacionamento · Âncora", "sintoma": "Tomadores de decisões (cliente) não enxergam potencial e valor no canal de vendas online (e-commerce)", "updatedAt": 0, "movedBy": ""}, {"id": "371z2bv", "what": "Organizar uma reunião com o Mati do suporte para entender as priorizações, prazos e tratativas para cada tipo de problema de suporte", "owner": "Eduardo Wenceslau", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Reunião realizada e com ATA e documento sobre as definição", "status": "todo", "origem": "Processos · Rocha", "sintoma": "Dificuldade nas priorizações junto ao time de suporte", "updatedAt": 0, "movedBy": ""}, {"id": "3xr4v19", "what": "Reunião para finalizar clusterização de carteiras", "owner": "Jônatas Lenotti", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Ter a clusterização finalizada", "status": "todo", "origem": "Comercial · Âncora", "sintoma": "Diminuição do escopo contratual para EO GM do novo contrato GM", "updatedAt": 0, "movedBy": ""}, {"id": "9ibi81m", "what": "Estruturar reunião semanal de EO", "owner": "Lucas Xavier", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Ter a reunião estruturada", "status": "todo", "origem": "Processos · Âncora", "sintoma": "Processos de handoff atuais (comercial e onboarding) não são efetivos", "updatedAt": 0, "movedBy": ""}, {"id": "gkb7846", "what": "Definir processo padrão de arquivo de feedback de reclamações ou tickets mal resolvidos do suporte", "owner": "Matheus Carvalho", "due": "2026-08-01", "kr": "Processo (não puxa KR)", "measure": "Compartilhar com o time e iniciar os registros - acompanhar em reunião semanal", "status": "todo", "origem": "Processos · Âncora", "sintoma": "Processos de handoff atuais (comercial e onboarding) não são efetivos", "updatedAt": 0, "movedBy": ""}, {"id": "wf422fk", "what": "Definições de quais informações devem vir do projeto de OB", "owner": "Eduardo Curti", "due": "2026-08-15", "kr": "Processo (não puxa KR)", "measure": "Ter novo processo de handoff finalizado e executado", "status": "todo", "origem": "Processos · Âncora", "sintoma": "Processos de handoff atuais (comercial e onboarding) não são efetivos", "updatedAt": 0, "movedBy": ""}, {"id": "dny8ccd", "what": "Elaborar relatório de performance/comercial de resultados para as montadoras", "owner": "Eduardo Curti", "due": "2026-09-01", "kr": "KR6 · Oportunidades pro comercial", "measure": "Ter o primeiro relatório finalizado/elaborado e enviado", "status": "todo", "origem": "Comercial · Âncora", "sintoma": "Diminuição do escopo contratual para EO GM do novo contrato GM", "updatedAt": 0, "movedBy": ""}, {"id": "19d33ut", "what": "Criar um acompanhamento de tarefas de suporte para visibilidade geral do time de EO", "owner": "Eduardo Wenceslau", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Ter o acompanhamento entregue", "status": "todo", "origem": "Processos · Rocha", "sintoma": "Dificuldade nas priorizações junto ao time de suporte", "updatedAt": 0, "movedBy": ""}, {"id": "ypw44bh", "what": "Elaborar um processo de identificação de problemas críticos, gatilho e fluxo de trabalho", "owner": "Eduardo Wenceslau", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Processo criado e documentado", "status": "todo", "origem": "Processos · Vento", "sintoma": "Melhor organização das informações dos EO's ", "updatedAt": 0, "movedBy": ""}, {"id": "f1xgpyy", "what": "Buscar formas de fortalecer e melhorar o relacionamento com a Stellantis", "owner": "Jônatas Lenotti", "due": "2026-09-01", "kr": "KR5 · Reativar dormentes / segurar churn", "measure": "Reunião com Stellantis realizada e ações planejadas", "status": "todo", "origem": "Concorrência · Rocha", "sintoma": "Possibilidade de aumento de churn com um novo integrador concorrente homologado pela Stellantis", "updatedAt": 0, "movedBy": ""}, {"id": "zw7ap99", "what": "Criar uma trilha do conhecimento para marketplaces - Mercado Livre, Shopee e Magalu", "owner": "Jônatas Lenotti", "due": "2026-09-01", "kr": "KR4 · Levar \"só ML\" p/ ML+Shopee", "measure": "Ter o treinamento definido e agendado", "status": "todo", "origem": "Capacitações e Treinamentos · Ilha", "sintoma": "Capacitação técnica da Equipe", "updatedAt": 0, "movedBy": ""}, {"id": "db581ip", "what": "Criar Dashboard ou app de acompanhamento de performance de cada EO (painel de EO)", "owner": "Jônatas Lenotti", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Ter o painel funcionado, publicado e ativo", "status": "todo", "origem": "Comercial · Âncora", "sintoma": "Diminuição do escopo contratual para EO GM do novo contrato GM", "updatedAt": 0, "movedBy": ""}, {"id": "h059991", "what": "Criar um processo para solicitação, priorização e acompanhamento de iniciativas de melhorias para a Alephee", "owner": "Lucas Alves", "due": "2026-09-01", "kr": "KR5 · Reativar dormentes / segurar churn", "measure": "Processo criado, aprovado pelo time de EO e rodando.", "status": "todo", "origem": "Processos · Ilha", "sintoma": "Melhorar conteúdos do Alephee Academy", "updatedAt": 0, "movedBy": ""}, {"id": "qmnurlt", "what": "Criar um workshop sobre serviços, identificação de oportunidade e técnicas de vendas", "owner": "Lucas Alves", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Agendar e executar o primeiro workshop", "status": "todo", "origem": "Comercial · Vento", "sintoma": "Vendas GM de consultoria e serviços", "updatedAt": 0, "movedBy": ""}, {"id": "1kpbru6", "what": "Criar uma SQUAD inter equipes para novas funcionalidades que possa atuar proativamente com o time atual de QA.", "owner": "Lucas Xavier", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Criar a Squad e começarem as reuniões", "status": "todo", "origem": "Processos · Rocha", "sintoma": "Dificuldade nas priorizações junto ao time de suporte", "updatedAt": 0, "movedBy": ""}, {"id": "3snddc3", "what": "Criar workshop de capacitações sobre novas funcionalidades", "owner": "Matheus Carvalho", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Agendar primeiro workshop", "status": "todo", "origem": "Comunicação · Âncora", "sintoma": "Falta de comunicação por parte de produtos das novas funcionalidades", "updatedAt": 0, "movedBy": ""}, {"id": "bugfsz8", "what": "Criar um material/capacitação sobre Peças Chevrolet", "owner": "Wilson Silva", "due": "2026-09-01", "kr": "Processo (não puxa KR)", "measure": "Ter o manual elaborado e publicado", "status": "todo", "origem": "Capacitações e Treinamentos · Ilha", "sintoma": "Capacitação técnica da Equipe", "updatedAt": 0, "movedBy": ""}, {"id": "n6tatm1", "what": "Melhores do Ano Alephee - TOP SELLERS", "owner": "Eduardo Wenceslau", "due": "2026-10-01", "kr": "KR5 · Reativar dormentes / segurar churn", "measure": "Ter a estrutura definida e elaborada da premiação", "status": "todo", "origem": "Reconhecimento · Ilha", "sintoma": "Celebrações entre equipes de resultados (Premiações)", "updatedAt": 0, "movedBy": ""}, {"id": "wbkpu2c", "what": "Criar um relatório de performance e operações para os sellers", "owner": "Jônatas Lenotti", "due": "2026-10-01", "kr": "KR2 · GMV da carteira ↑", "measure": "Ter o relatório aprovado e enviado para os sellers priorizados.", "status": "todo", "origem": "Processos · Ilha", "sintoma": "Melhorar conteúdos do Alephee Academy", "updatedAt": 0, "movedBy": ""}, {"id": "pcw4yrj", "what": "Manter recorrência de reuniões presenciais", "owner": "Jônatas Lenotti", "due": "2026-10-01", "kr": "Processo (não puxa KR)", "measure": "Agendar próxima reunião", "status": "todo", "origem": "Processos · Vento", "sintoma": "Melhor organização das informações dos EO's ", "updatedAt": 0, "movedBy": ""}, {"id": "w4kcx8w", "what": "Trilha de conhecimento EO Lucão - Temas mais importantes (mais urgentes)", "owner": "Lucas Xavier", "due": "2026-10-01", "kr": "Processo (não puxa KR)", "measure": "Ter a trilha do conhecimento elaborada e em execução", "status": "todo", "origem": "Capacitações e Treinamentos · Rocha", "sintoma": "Time com conhecimentos desnivelados e concentrados em pessoas específicas", "updatedAt": 0, "movedBy": ""}, {"id": "whsy5lv", "what": "Criar um processo de onboarding com documentação em cada etapa", "owner": "Matheus Carvalho", "due": "2026-10-01", "kr": "Processo (não puxa KR)", "measure": "Ter o processo criado, com documentos e alinhamento com o RH", "status": "todo", "origem": "Capacitações e Treinamentos · Rocha", "sintoma": "Time com conhecimentos desnivelados e concentrados em pessoas específicas", "updatedAt": 0, "movedBy": ""}, {"id": "kmnprtf", "what": "Elaborar um ritual de celebração entre time e premiação com os melhores EO's do ano", "owner": "Jônatas Lenotti", "due": "2026-11-01", "kr": "Processo (não puxa KR)", "measure": "Ter a estrutura definida, critérios, elegibilidade, etc", "status": "todo", "origem": "Reconhecimento · Ilha", "sintoma": "Celebrações entre equipes de resultados (Premiações)", "updatedAt": 0, "movedBy": ""}, {"id": "xg0agk3", "what": "Desenvolver uma Alephee Academy com base nos conteúdos gerados pelo time de EO e outras equipes", "owner": "Lucas Xavier", "due": "2027-01-01", "kr": "Processo (não puxa KR)", "measure": "Ter a nova Alephee Academy publicada", "status": "todo", "origem": "Processos · Ilha", "sintoma": "Melhorar conteúdos do Alephee Academy", "updatedAt": 0, "movedBy": ""}], "owners": ["Eduardo Curti", "Eduardo Wenceslau", "Jônatas Lenotti", "Lucas Alves", "Lucas Xavier", "Matheus Carvalho", "Wilson Silva"], "krs": ["KR2 · GMV da carteira ↑", "KR4 · Levar \"só ML\" p/ ML+Shopee", "KR5 · Reativar dormentes / segurar churn", "KR6 · Oportunidades pro comercial", "Processo (não puxa KR)"]};
+const ORDER=['todo','doing','done'];
+const NAMES={todo:'A fazer',doing:'Em andamento',done:'Concluída'};
+
+let state={tasks:JSON.parse(JSON.stringify(SEED.tasks)),krs:SEED.krs.slice(),krsUpdatedAt:0};
+const openCards=new Set();
+const drafts={};
+const uid=()=>Math.random().toString(36).slice(2,10);
+function fmtAt(ms){const d=new Date(ms);const p=n=>('0'+n).slice(-2);return p(d.getDate())+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes());}
+function unionById(a,b){
+  const out=(a||[]).slice();const seen={};out.forEach(x=>seen[x.id]=1);let added=false;
+  (b||[]).forEach(x=>{if(x&&x.id&&!seen[x.id]){out.push(x);seen[x.id]=1;added=true;}});
+  out.sort((x,y)=>(x.at||0)-(y.at||0));
+  return {list:out,added};
+}
+let saveTimer=null;
+
+/* ---------- sync em tempo real via Supabase, com fallback local ---------- */
+function setSync(mode,txt){const el=document.getElementById('sync');el.className='sync-chip '+mode;el.textContent='● '+txt;}
+function mergeBoards(remoteTasks){
+  if(!Array.isArray(remoteTasks))return false;
+  let changed=false;
+  const byId={};state.tasks.forEach(t=>byId[t.id]=t);
+  remoteTasks.forEach(rt=>{
+    const lt=byId[rt.id];
+    if(!lt){state.tasks.push(rt);changed=true;return;}
+    const uc=unionById(lt.comments,rt.comments);
+    const uf=unionById(lt.files,rt.files);
+    if((rt.updatedAt||0)>(lt.updatedAt||0)){Object.assign(lt,rt);changed=true;}
+    if(uc.added)changed=true;
+    if(uf.added)changed=true;
+    lt.comments=uc.list;lt.files=uf.list;
+  });
+  return changed;
+}
+function mergeKrs(remoteKrs,remoteAt){
+  if(!Array.isArray(remoteKrs))return false;
+  if((remoteAt||0)>(state.krsUpdatedAt||0)){state.krs=remoteKrs;state.krsUpdatedAt=remoteAt;return true;}
+  return false;
+}
+async function pullShared(render){
+  if(!shared)return;
+  try{
+    const res=await sb.from('quadro_eo').select('data').eq('id',ROW).maybeSingle();
+    if(res.error)throw res.error;
+    const d=res.data&&res.data.data;
+    if(d){
+      let ch=false;
+      if(d.tasks)ch=mergeBoards(d.tasks);
+      if(mergeKrs(d.krs,d.krsUpdatedAt)){ch=true;fillFilters();}
+      if(ch&&render)renderAll(false);
+    }
+  }catch(e){}
+}
+async function pushShared(){
+  if(!shared){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}return;}
+  setSync('busy','sincronizando...');
+  try{
+    await pullShared(false);
+    const res=await sb.from('quadro_eo').upsert({id:ROW,data:{tasks:state.tasks,krs:state.krs,krsUpdatedAt:state.krsUpdatedAt},updated_at:new Date().toISOString()});
+    if(res.error)throw res.error;
+    setSync('','sincronizado · tempo real');
+  }catch(e){
+    setSync('local','falha de sync — tentando de novo');
+    setTimeout(pushShared,4000);
+  }
+}
+async function load(){
+  try{
+    if(!window.supabase)throw new Error('cdn');
+    sb=window.supabase.createClient(SB_URL,SB_KEY);
+    const res=await sb.from('quadro_eo').select('data').eq('id',ROW).maybeSingle();
+    if(res.error)throw res.error;
+    if(res.data&&res.data.data){const d=res.data.data;if(d.tasks)mergeBoards(d.tasks);mergeKrs(d.krs,d.krsUpdatedAt);}
+    else{await sb.from('quadro_eo').upsert({id:ROW,data:{tasks:state.tasks,krs:state.krs,krsUpdatedAt:state.krsUpdatedAt},updated_at:new Date().toISOString()});}
+    shared=true;
+    sb.channel('quadro-live')
+      .on('postgres_changes',{event:'*',schema:'public',table:'quadro_eo'},payload=>{
+        const nd=payload["new"];
+        if(nd&&nd.data){
+          let ch=false;
+          if(nd.data.tasks)ch=mergeBoards(nd.data.tasks);
+          if(mergeKrs(nd.data.krs,nd.data.krsUpdatedAt)){ch=true;fillFilters();}
+          if(ch)renderAll(false);
+        }
+      })
+      .subscribe(st=>{if(st==='SUBSCRIBED')setSync('','sincronizado · tempo real');});
+    setSync('','sincronizado');
+  }catch(e){
+    shared=false;
+    setSync('local','modo local (sem conexão)');
+    try{const raw=localStorage.getItem(KEY);if(raw)Object.assign(state,JSON.parse(raw));}catch(e2){}
+  }
+}
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(pushShared,300);
+}
+async function uploadFile(taskId,file,lbl){
+  if(!file)return;
+  if(!shared){toast('Anexos precisam de conexão com o quadro online.');return;}
+  if(file.size>10*1024*1024){toast('Arquivo muito grande (máx. 10 MB).');return;}
+  const t=byId(taskId);if(!t)return;
+  lbl.classList.add('busy');lbl.firstChild.textContent='Enviando...';
+  try{
+    const clean=file.name.replace(/[^a-zA-Z0-9._-]+/g,'_').slice(-80);
+    const path=taskId+'/'+Date.now()+'_'+clean;
+    const up=await sb.storage.from('anexos').upload(path,file,{upsert:false});
+    if(up.error)throw up.error;
+    const pu=sb.storage.from('anexos').getPublicUrl(path);
+    if(!t.files)t.files=[];
+    t.files.push({id:uid(),name:file.name,url:pu.data.publicUrl,by:USER,at:Date.now(),size:file.size});
+    toast('Anexo enviado ✓');renderAll();
+  }catch(e){
+    toast('Falha no upload. O bucket "anexos" existe no Supabase?');
+    lbl.classList.remove('busy');lbl.firstChild.textContent='＋ Anexar arquivo';
+  }
+}
+
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hoje=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());};
+const MESES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function fmtDue(iso){const [y,m,d]=iso.split('-');return d+'/'+m+'/'+y.slice(2);}
+function mesKey(iso){return iso.slice(0,7);}
+function mesLabel(iso){const [y,m]=iso.split('-');return MESES[+m-1]+'/'+y.slice(2);}
+function dueClass(t){
+  if(t.status==='done')return '';
+  const due=new Date(+t.due.slice(0,4),+t.due.slice(5,7)-1,+t.due.slice(8,10));
+  const diff=(due-hoje())/86400000;
+  if(diff<0)return 'late';
+  if(diff<=7)return 'soon';
+  return '';
+}
+
+/* ---------- filtros ---------- */
+function filtros(){
+  return {
+    owner:document.getElementById('f-owner').value,
+    kr:document.getElementById('f-kr').value,
+    mes:document.getElementById('f-mes').value,
+    q:document.getElementById('f-q').value.trim().toLowerCase()
+  };
+}
+function passa(t,f){
+  if(f.owner&&t.owner!==f.owner)return false;
+  if(f.kr&&t.kr!==f.kr)return false;
+  if(f.mes&&mesKey(t.due)!==f.mes)return false;
+  if(f.q&&!(t.what.toLowerCase().includes(f.q)||t.measure.toLowerCase().includes(f.q)||t.owner.toLowerCase().includes(f.q)))return false;
+  return true;
+}
+
+/* ---------- render ---------- */
+function krOptions(cur){
+  const list=state.krs.slice();
+  if(cur&&list.indexOf(cur)===-1)list.push(cur);
+  return list.map(k=>'<option '+(k===cur?'selected':'')+'>'+esc(k)+'</option>').join('');
+}
+function cardHTML(t){
+  const dc=dueClass(t);
+  const isDone=t.status==='done';
+  const krChip=t.kr.startsWith('Processo')
+    ?'<span class="chip">Processo</span>'
+    :'<span class="chip kr">'+esc(t.kr)+'</span>';
+  const idx=ORDER.indexOf(t.status);
+  const nc=(t.comments||[]).length, nf=(t.files||[]).length;
+  const isOpen=openCards.has(t.id);
+  return '<div class="card '+dc+(isDone?' done-card':'')+(isOpen?' open':'')+'" draggable="true" data-id="'+t.id+'">'
+    +'<div class="what">'+esc(t.what)+'</div>'
+    +'<div class="chips">'
+    +(dc==='late'?'<span class="chip status-flag">ATRASADA</span>':'')
+    +'<span class="chip owner">'+esc(t.owner)+'</span>'
+    +'<span class="chip due '+(dc==='late'?'l':dc==='soon'?'s':'')+'">'+fmtDue(t.due)+'</span>'
+    +krChip
+    +(nc?'<span class="chip badge">💬 '+nc+'</span>':'')
+    +(nf?'<span class="chip badge">📎 '+nf+'</span>':'')
+    +'</div>'
+    +'<div class="cardfoot">'
+    +'<button class="mv" data-mv="-1" '+(idx===0?'disabled':'')+' title="Mover pra trás">◀</button>'
+    +'<button class="mv" data-mv="1" '+(idx===2?'disabled':'')+' title="Mover pra frente">▶</button>'
+    +'<button class="exp-t" data-open="1">'+(isOpen?'detalhes ▴':'detalhes ▾')+'</button>'
+    +'</div>'
+    +'<div class="details">'
+    +'<div class="row"><div class="lab">COMO MEDIMOS</div>'+esc(t.measure)+'</div>'
+    +(t.origem?'<div class="row"><div class="lab">TEMA DE ORIGEM</div>'+esc(t.origem)+(t.sintoma?' — '+esc(t.sintoma):'')+'</div>':'')
+    +(t.movedBy?'<div class="row"><div class="lab">ÚLTIMA ATUALIZAÇÃO</div>'+esc(t.movedBy)+'</div>':'')
+    +'<div class="edit">'
+    +'<select data-ed="owner">'+SEED.owners.map(o=>'<option '+(o===t.owner?'selected':'')+'>'+esc(o)+'</option>').join('')+'</select>'
+    +'<input type="date" data-ed="due" value="'+t.due+'">'
+    +'<select data-ed="kr">'+krOptions(t.kr)+'</select>'
+    +'</div>'
+    +'<div class="row" style="margin-top:12px"><div class="lab">COMENTÁRIOS</div>'
+    +(t.comments||[]).map(cm=>'<div class="cm"><b>'+esc(cm.by||'?')+'</b><span class="cm-at">'+fmtAt(cm.at||0)+'</span><br>'+esc(cm.text)+'</div>').join('')
+    +'<div class="cm-new"><input class="cm-input" placeholder="Escreve um comentário..." maxlength="500"><button class="cm-btn">Enviar</button></div>'
+    +'</div>'
+    +'<div class="row" style="margin-top:12px"><div class="lab">ANEXOS</div>'
+    +(t.files||[]).map(f=>'<div class="file-row"><a href="'+esc(f.url)+'" target="_blank" rel="noopener">📎 '+esc(f.name)+'</a><span class="by">por '+esc(f.by||'?')+' · '+fmtAt(f.at||0)+'</span></div>').join('')
+    +'<label class="up-btn">＋ Anexar arquivo<input type="file" hidden></label>'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+}
+function renderAll(doSave){
+  if(doSave===undefined)doSave=true;
+  document.querySelectorAll('.card').forEach(c=>{
+    const inp=c.querySelector('.cm-input');
+    if(inp&&inp.value)drafts[c.dataset.id]=inp.value;
+  });
+  const f=filtros();
+  const vis=state.tasks.filter(t=>passa(t,f));
+  ORDER.forEach(st=>{
+    const list=vis.filter(t=>t.status===st)
+      .sort((a,b)=>a.due.localeCompare(b.due)||a.owner.localeCompare(b.owner));
+    const el=document.getElementById('l-'+st);
+    el.innerHTML=list.length?list.map(cardHTML).join(''):'<div class="empty">Nada por aqui'+(st==='done'?' ainda. Bora!':'')+'</div>';
+    document.getElementById('n-'+st).textContent=state.tasks.filter(t=>t.status===st).length;
+  });
+  const done=state.tasks.filter(t=>t.status==='done').length;
+  document.getElementById('prog-txt').textContent=done+' de '+state.tasks.length;
+  document.getElementById('prog-fill').style.width=(done/state.tasks.length*100)+'%';
+  // placar por dono
+  const foot=SEED.owners.map(o=>{
+    const mine=state.tasks.filter(t=>t.owner===o);
+    const pend=mine.filter(t=>t.status!=='done').length;
+    const late=mine.filter(t=>dueClass(t)==='late').length;
+    return '<span class="of"><b>'+esc(o.split(' ')[0])+'</b> · '+pend+' pendente'+(pend!==1?'s':'')
+      +(late?' · <span class="late-n">'+late+' atrasada'+(late!==1?'s':'')+'</span>':'')+'</span>';
+  }).join('');
+  document.getElementById('ownerFoot').innerHTML=foot;
+  bind();
+  document.querySelectorAll('.card').forEach(c=>{
+    const inp=c.querySelector('.cm-input');
+    if(inp&&drafts[c.dataset.id])inp.value=drafts[c.dataset.id];
+  });
+  if(doSave)save();
+}
+
+/* ---------- interações ---------- */
+function byId(id){return state.tasks.find(t=>t.id===id);}
+function bind(){
+  document.querySelectorAll('.card').forEach(c=>{
+    c.addEventListener('dragstart',e=>{
+      if(e.target&&e.target.closest&&e.target.closest('.details')){e.preventDefault();return;}
+      e.dataTransfer.setData('text/plain',c.dataset.id);c.classList.add('dragging');
+    });
+    c.addEventListener('dragend',()=>c.classList.remove('dragging'));
+    c.querySelectorAll('.mv').forEach(b=>b.onclick=e=>{
+      e.stopPropagation();
+      const t=byId(c.dataset.id);
+      const i=ORDER.indexOf(t.status)+(+b.dataset.mv);
+      if(i>=0&&i<3){t.status=ORDER[i];t.updatedAt=Date.now();t.movedBy=USER;toast(t.status==='done'?'Concluída! 🎉':'Movida pra '+NAMES[t.status]);renderAll();}
+    });
+    const opener=c.querySelector('[data-open]');
+    opener.onclick=e=>{
+      e.stopPropagation();
+      c.classList.toggle('open');
+      const on=c.classList.contains('open');
+      if(on)openCards.add(c.dataset.id);else openCards.delete(c.dataset.id);
+      opener.textContent=on?'detalhes ▴':'detalhes ▾';
+    };
+    const cmBtn=c.querySelector('.cm-btn'), cmInp=c.querySelector('.cm-input');
+    if(cmBtn){
+      const sendCm=()=>{
+        const txt=cmInp.value.trim();if(!txt)return;
+        const t=byId(c.dataset.id);
+        if(!t.comments)t.comments=[];
+        t.comments.push({id:uid(),by:USER,at:Date.now(),text:txt});
+        delete drafts[t.id];
+        toast('Comentário publicado ✓');renderAll();
+      };
+      cmBtn.onclick=e=>{e.stopPropagation();sendCm();};
+      cmInp.onclick=e=>e.stopPropagation();
+      cmInp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')sendCm();};
+    }
+    const upLbl=c.querySelector('.up-btn');
+    if(upLbl){
+      upLbl.onclick=e=>e.stopPropagation();
+      upLbl.querySelector('input').onchange=e=>uploadFile(c.dataset.id,e.target.files[0],upLbl);
+    }
+    c.querySelectorAll('[data-ed]').forEach(inp=>{
+      inp.onchange=()=>{const t=byId(c.dataset.id);t[inp.dataset.ed]=inp.value;t.updatedAt=Date.now();t.movedBy=USER;toast('Atualizado ✓');renderAll();};
+      inp.onclick=e=>e.stopPropagation();
+    });
+  });
+  document.querySelectorAll('.col').forEach(col=>{
+    col.ondragover=e=>{e.preventDefault();col.classList.add('over');};
+    col.ondragleave=()=>col.classList.remove('over');
+    col.ondrop=e=>{
+      e.preventDefault();col.classList.remove('over');
+      const t=byId(e.dataTransfer.getData('text/plain'));
+      if(t&&t.status!==col.dataset.st){t.status=col.dataset.st;t.updatedAt=Date.now();t.movedBy=USER;toast(t.status==='done'?'Concluída! 🎉':'Movida pra '+NAMES[t.status]);renderAll();}
+    };
+  });
+}
+
+/* ---------- toolbar ---------- */
+function fillFilters(){
+  const fill=(id,vals,labelFn)=>{
+    const el=document.getElementById(id);
+    const cur=el.value;
+    while(el.options.length>1)el.remove(1);
+    vals.forEach(v=>{const op=document.createElement('option');op.value=v;op.textContent=labelFn?labelFn(v):v;el.appendChild(op);});
+    if(vals.indexOf(cur)!==-1)el.value=cur;
+  };
+  fill('f-owner',SEED.owners);
+  fill('f-kr',state.krs.slice());
+  fill('f-mes',state.tasks.map(t=>mesKey(t.due)).filter((v,i,a)=>a.indexOf(v)===i).sort(),m=>mesLabel(m+'-01'));
+  ['f-owner','f-kr','f-mes'].forEach(id=>document.getElementById(id).onchange=()=>renderAll(false));
+  document.getElementById('f-q').oninput=()=>renderAll(false);
+}
+function dl(content,name,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
+document.getElementById('expBtn').onclick=()=>{dl(JSON.stringify(state,null,1),'quadro-acoes-eo.json','application/json');toast('JSON exportado ✓');};
+document.getElementById('csvBtn').onclick=()=>{
+  const rows=[['Tarefa','Dono','Prazo','Vinculo','Como medimos','Status']];
+  state.tasks.forEach(t=>rows.push([t.what,t.owner,fmtDue(t.due),t.kr,t.measure,NAMES[t.status]]));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+  dl('\ufeff'+csv,'quadro-acoes-eo.csv','text/csv;charset=utf-8');toast('CSV exportado pro Excel ✓');
+};
+document.getElementById('impBtn').onclick=()=>document.getElementById('impFile').click();
+document.getElementById('impFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);
+    if(d.tasks)state.tasks=d.tasks;else if(Array.isArray(d))state.tasks=d;
+    toast('Importado ✓');renderAll();}catch(err){toast('Arquivo inválido.');}};
+  r.readAsText(f);e.target.value='';
+};
+/* ---------- gerenciador de vínculos ---------- */
+function openKrModal(){
+  const list=document.getElementById('krList');
+  list.innerHTML=state.krs.map(k=>'<div class="kr-row" data-old="'+esc(k)+'"><input value="'+esc(k)+'" maxlength="60"><button class="kr-del" title="Remover">✕</button></div>').join('');
+  list.querySelectorAll('.kr-del').forEach(b=>b.onclick=()=>b.parentElement.remove());
+  document.getElementById('krModal').style.display='flex';
+}
+document.getElementById('krBtn').onclick=openKrModal;
+document.getElementById('krCancel').onclick=()=>document.getElementById('krModal').style.display='none';
+document.getElementById('krAddBtn').onclick=()=>{
+  const inp=document.getElementById('krNew');
+  const v=inp.value.trim();if(!v)return;
+  const list=document.getElementById('krList');
+  const row=document.createElement('div');row.className='kr-row';row.dataset.old='';
+  row.innerHTML='<input value="'+esc(v)+'" maxlength="60"><button class="kr-del" title="Remover">✕</button>';
+  row.querySelector('.kr-del').onclick=()=>row.remove();
+  list.appendChild(row);inp.value='';
+};
+document.getElementById('krSave').onclick=()=>{
+  const rows=[...document.querySelectorAll('#krList .kr-row')];
+  const renames={};const finalList=[];
+  rows.forEach(r=>{
+    const old=r.dataset.old;const val=r.querySelector('input').value.trim();
+    if(!val)return;
+    if(finalList.indexOf(val)===-1)finalList.push(val);
+    if(old&&old!==val)renames[old]=val;
+  });
+  if(!finalList.length){toast('Deixa pelo menos um vínculo na lista.');return;}
+  const removed=state.krs.filter(k=>finalList.indexOf(k)===-1&&!(k in renames));
+  const fallback=finalList.find(k=>k.indexOf('Processo')===0)||finalList[0];
+  const now=Date.now();let touched=0;
+  state.tasks.forEach(t=>{
+    if(renames[t.kr]){t.kr=renames[t.kr];t.updatedAt=now;t.movedBy=USER;touched++;}
+    else if(removed.indexOf(t.kr)!==-1){t.kr=fallback;t.updatedAt=now;t.movedBy=USER;touched++;}
+  });
+  state.krs=finalList;state.krsUpdatedAt=now;
+  document.getElementById('krModal').style.display='none';
+  fillFilters();
+  toast(touched?('Vínculos salvos · '+touched+' card'+(touched>1?'s':'')+' atualizado'+(touched>1?'s':'')):'Vínculos salvos ✓');
+  renderAll();
+};
+let toastTimer=null;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1900);}
+
+function askWho(cb){
+  let n='';try{n=localStorage.getItem('quadro_eo_user')||'';}catch(e){}
+  if(n){USER=n;cb();return;}
+  const m=document.getElementById('whoModal');m.style.display='flex';
+  const go=()=>{
+    const v=document.getElementById('whoInput').value.trim();
+    if(!v)return;
+    USER=v;try{localStorage.setItem('quadro_eo_user',v);}catch(e){}
+    m.style.display='none';cb();
+  };
+  document.getElementById('whoBtn').onclick=go;
+  document.getElementById('whoInput').onkeydown=e=>{if(e.key==='Enter')go();};
+  document.getElementById('whoInput').focus();
+}
+(async()=>{
+  await load();
+  fillFilters();
+  renderAll(false);
+  askWho(()=>{toast('Bem-vindo ao quadro, '+USER+'!');});
+  setInterval(()=>pullShared(true),60000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)pullShared(true);});
+})();
+</script>
+</body>
+</html>
